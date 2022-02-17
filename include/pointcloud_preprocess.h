@@ -58,7 +58,7 @@ namespace faster_lio {
 enum class LidarType { AVIA = 1, VELO32, OUST64 };
 
 /**
- * point clou dpreprocess
+ * point cloud preprocess
  * just unify the point format from livox/velodyne to PCL
  */
 class PointCloudPreprocess {
@@ -68,6 +68,7 @@ class PointCloudPreprocess {
     PointCloudPreprocess() = default;
     ~PointCloudPreprocess() = default;
 
+    /// processors
     void Process(const livox_ros_driver::CustomMsg::ConstPtr &msg, PointCloudType::Ptr &pcl_out);
     void Process(const sensor_msgs::PointCloud2::ConstPtr &msg, PointCloudType::Ptr &pcl_out);
     void Set(LidarType lid_type, double bld, int pfilt_num);
@@ -86,7 +87,7 @@ class PointCloudPreprocess {
     void Oust64Handler(const sensor_msgs::PointCloud2::ConstPtr &msg);
     void VelodyneHandler(const sensor_msgs::PointCloud2::ConstPtr &msg);
 
-    PointCloudType pl_full_, pl_surf_;
+    PointCloudType cloud_full_, cloud_out_;
 
     LidarType lidar_type_ = LidarType::AVIA;
     bool feature_enabled_ = false;

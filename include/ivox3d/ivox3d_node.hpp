@@ -8,6 +8,7 @@
 
 namespace faster_lio {
 
+// squared distance of two pcl points
 template <typename PointT>
 inline double distance2(const PointT& pt1, const PointT& pt2) {
     Eigen::Vector3f d = pt1.getVector3fMap() - pt2.getVector3fMap();
@@ -53,10 +54,6 @@ class IVoxNode {
 
     inline PointT GetPoint(const std::size_t idx) const;
 
-    void ErasePoint(const PointT& pt, const double erase_distance_th_);
-
-    bool NNPoint(const PointT& point, DistPoint& dist_point) const;
-
     int KNNPointByCondition(std::vector<DistPoint>& dis_points, const PointT& point, const int& K,
                             const double& max_range);
 
@@ -97,18 +94,18 @@ class IVoxNodePhc {
     std::vector<PhcCube> phc_cubes_;
 
     PointT center_;
-    float side_length_;
-    int phc_order_;
-    float phc_side_length_;
-    float phc_side_length_inv_;
+    float side_length_ = 0;
+    int phc_order_ = 6;
+    float phc_side_length_ = 0;
+    float phc_side_length_inv_ = 0;
     Eigen::Matrix<float, dim, 1> min_cube_;
 };
 
 template <typename PointT, int dim>
 struct IVoxNode<PointT, dim>::DistPoint {
-    double dist;
-    IVoxNode* node;
-    int idx;
+    double dist = 0;
+    IVoxNode* node = nullptr;
+    int idx = 0;
 
     DistPoint() = default;
     DistPoint(const double d, IVoxNode* n, const int i) : dist(d), node(n), idx(i) {}
@@ -138,35 +135,6 @@ std::size_t IVoxNode<PointT, dim>::Size() const {
 template <typename PointT, int dim>
 PointT IVoxNode<PointT, dim>::GetPoint(const std::size_t idx) const {
     return points_[idx];
-}
-
-template <typename PointT, int dim>
-void IVoxNode<PointT, dim>::ErasePoint(const PointT& pt, const double erase_distance_th_) {
-    for (auto iter = points_.begin(); iter != points_.end();) {
-        if (distance2(*iter, pt) < erase_distance_th_ * erase_distance_th_) {
-            iter = points_.erase(iter);
-        } else {
-            iter++;
-        }
-    }
-}
-
-template <typename PointT, int dim>
-bool IVoxNode<PointT, dim>::NNPoint(const PointT& point, DistPoint& dist_point) const {
-    if (points_.empty()) {
-        return false;
-    }
-    double min_dist = std::numeric_limits<float>::max();
-    PointT& min_pt;
-    for (auto& pt : points_) {
-        float dist = (pt.getVector3fMap() - point.getVector3fMap()).squaredNorm();
-        if (dist < min_dist) {
-            min_dist = dist;
-            min_pt = pt;
-        }
-    }
-    dist_point = DistPoint(min_dist, this, &min_pt - points_.data());
-    return true;
 }
 
 template <typename PointT, int dim>
@@ -238,9 +206,9 @@ int IVoxNode<PointT, dim>::KNNPointByCondition(std::vector<DistPoint>& dis_point
 
 template <typename PointT, int dim>
 struct IVoxNodePhc<PointT, dim>::DistPoint {
-    double dist;
-    IVoxNodePhc* node;
-    int idx;
+    double dist = 0;
+    IVoxNodePhc* node = nullptr;
+    int idx = 0;
 
     DistPoint() {}
     DistPoint(const double d, IVoxNodePhc* n, const int i) : dist(d), node(n), idx(i) {}
@@ -254,7 +222,7 @@ struct IVoxNodePhc<PointT, dim>::DistPoint {
 
 template <typename PointT, int dim>
 struct IVoxNodePhc<PointT, dim>::PhcCube {
-    uint32_t idx;
+    uint32_t idx = 0;
     pcl::CentroidPoint<PointT> mean;
 
     PhcCube(uint32_t index, const PointT& pt) { mean.add(pt); }

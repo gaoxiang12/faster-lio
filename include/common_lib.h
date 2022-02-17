@@ -22,12 +22,9 @@ using PointCloudType = pcl::PointCloud<PointType>;
 using CloudPtr = PointCloudType::Ptr;
 using PointVector = std::vector<PointType, Eigen::aligned_allocator<PointType>>;
 
-namespace faster_lio {
-namespace common {
+namespace faster_lio::common {
 
 constexpr double G_m_s2 = 9.81;  // Gravity const in GuangDong/China
-constexpr int INIT_COV = 1;
-constexpr int MAX_MEAS_DIM = 10000;
 
 template <typename S>
 inline Eigen::Matrix<S, 3, 1> VecFromArray(const std::vector<double> &v) {
@@ -100,7 +97,7 @@ T deg2rad(const T &degrees) {
 }
 
 /**
- * 从状态量设置一个Pose6D型变量
+ * set a pose 6d from ekf status
  * @tparam T
  * @param t
  * @param a
@@ -167,7 +164,7 @@ bool esti_normvector(Eigen::Matrix<T, 3, 1> &normvec, const PointVector &point, 
 }
 
 /**
- * 平方距离
+ * squared distance
  * @param p1
  * @param p2
  * @return
@@ -179,7 +176,7 @@ inline float calc_dist(const PointType &p1, const PointType &p2) {
 inline float calc_dist(const Eigen::Vector3f &p1, const Eigen::Vector3f &p2) { return (p1 - p2).squaredNorm(); }
 
 /**
- * 估计平面（和上面的基本一样）
+ * estimate a plane
  * @tparam T
  * @param pca_result
  * @param point
@@ -245,6 +242,5 @@ inline bool esti_plane(Eigen::Matrix<T, 4, 1> &pca_result, const PointVector &po
     return true;
 }
 
-}  // namespace common
-}  // namespace faster_lio
+}  // namespace faster_lio::common
 #endif

@@ -69,7 +69,6 @@ class LaserMapping {
 
     void PointBodyToWorld(PointType const *pi, PointType *const po);
     void PointBodyToWorld(const common::V3F &pi, PointType *const po);
-
     void PointBodyLidarToIMU(PointType const *const pi, PointType *const po);
 
     void MapIncremental();
@@ -100,13 +99,13 @@ class LaserMapping {
     std::string map_file_path_;
 
     /// point clouds data
-    CloudPtr scan_undistort_{new PointCloudType()};
-    CloudPtr scan_down_body_{new PointCloudType()};
-    CloudPtr scan_down_world_{new PointCloudType()};
-    std::vector<PointVector> nearest_points_;
-    common::VV4F corr_pts_;
-    common::VV4F corr_norm_;
-    pcl::VoxelGrid<PointType> voxel_scan_;
+    CloudPtr scan_undistort_{new PointCloudType()};   // scan after undistortion
+    CloudPtr scan_down_body_{new PointCloudType()};   // downsampled scan in body
+    CloudPtr scan_down_world_{new PointCloudType()};  // downsampled scan in world
+    std::vector<PointVector> nearest_points_;         // nearest points of current scan
+    common::VV4F corr_pts_;                           // inlier pts
+    common::VV4F corr_norm_;                          // inlier plane norms
+    pcl::VoxelGrid<PointType> voxel_scan_;            // voxel filter for current scan
 
     /// ros pub and sub stuffs
     ros::Subscriber sub_pcl_;
@@ -148,7 +147,7 @@ class LaserMapping {
     esekfom::esekf<state_ikfom, 12, input_ikfom> kf_;  // esekf
     state_ikfom state_point_;                          // ekf current state
     vect3 pos_lidar_;                                  // lidar position after eskf update
-    common::V3D euler_cur_ = common::V3D::Zero();      // 当前帧以euler角表达的旋转
+    common::V3D euler_cur_ = common::V3D::Zero();      // rotation in euler angles
     bool extrinsic_est_en_ = true;
 
     /////////////////////////  debug show / save /////////////////////////////////////////////////////////

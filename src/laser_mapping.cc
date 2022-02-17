@@ -316,7 +316,7 @@ void LaserMapping::Run() {
     Timer::Evaluate([&, this]() { MapIncremental(); }, "    Incremental Mapping");
 
     LOG(INFO) << "[ mapping ]: In num: " << scan_undistort_->points.size() << " downsamp " << cur_pts
-              << " Map grid num: " << ivox_->num_valid_grids() << " effect num : " << effect_feat_num_;
+              << " Map grid num: " << ivox_->NumValidGrids() << " effect num : " << effect_feat_num_;
 
     // publish or save map pcd
     if (run_in_offline_) {
@@ -435,7 +435,6 @@ bool LaserMapping::SyncPackages() {
         measures_.lidar_bag_time_ = time_buffer_.front();
 
         if (measures_.lidar_->points.size() <= 1) {
-            // 点云太少
             LOG(WARNING) << "Too few input point cloud!";
             lidar_end_time_ = measures_.lidar_bag_time_ + lidar_mean_scantime_;
         } else if (measures_.lidar_->points.back().curvature / double(1000) < 0.5 * lidar_mean_scantime_) {
@@ -538,6 +537,8 @@ void LaserMapping::MapIncremental() {
 
 /**
  * Lidar point cloud registration
+ * will be called by the eskf custom observation model
+ * compute point-to-plane residual here
  * @param s kf state
  * @param ekfom_data H matrix
  */
@@ -550,8 +551,8 @@ void LaserMapping::ObsModel(state_ikfom &s, esekfom::dyn_share_datastruct<double
     }
 
     std::vector<float> residuals(cnt_pts, 0);
-    std::vector<bool> point_selected_surf(cnt_pts, true);   // 默认均为内点
-    common::VV4F plane_coef(cnt_pts, common::V4F::Zero());  // 平面方程系数
+    std::vector<bool> point_selected_surf(cnt_pts, true);   // selected points
+    common::VV4F plane_coef(cnt_pts, common::V4F::Zero());  // plane coeffs
 
     Timer::Evaluate(
         [&, this]() {

@@ -20,7 +20,7 @@ enum class IVoxNodeType {
     PHC,      // phc ivox
 };
 
-/// traits 用于定义NodeType
+/// traits for NodeType
 template <IVoxNodeType node_type, typename PointT, int dim>
 struct IVoxNodeTypeTraits {};
 
@@ -51,11 +51,10 @@ class IVox {
     };
 
     struct Options {
-        float resolution_ = 0.2;
-        float inv_resolution_ = 10.0;
-        float erase_distance_th_ = 0.01;
-        NearbyType nearby_type_ = NearbyType::NEARBY6;
-        std::size_t capacity_ = 1000000;
+        float resolution_ = 0.2;                        // ivox resolution
+        float inv_resolution_ = 10.0;                   // inverse resolution
+        NearbyType nearby_type_ = NearbyType::NEARBY6;  // nearby range
+        std::size_t capacity_ = 1000000;                // capacity
     };
 
     /**
@@ -83,10 +82,10 @@ class IVox {
     bool GetClosestPoint(const PointVector& cloud, PointVector& closest_cloud);
 
     /// get number of points
-    size_t num_points() const;
+    size_t NumPoints() const;
 
     /// get number of valid grids
-    size_t num_valid_grids() const;
+    size_t NumValidGrids() const;
 
     /// get statistics of the points
     std::vector<float> StatGridPoints() const;
@@ -205,7 +204,7 @@ bool IVox<dim, node_type, PointType>::GetClosestPoint(const PointType& pt, Point
 }
 
 template <int dim, IVoxNodeType node_type, typename PointType>
-size_t IVox<dim, node_type, PointType>::num_valid_grids() const {
+size_t IVox<dim, node_type, PointType>::NumValidGrids() const {
     return grids_map_.size();
 }
 

@@ -2,8 +2,8 @@
 // Created by xiang on 2021/7/16.
 //
 
-#ifndef MAPPING_EIGEN_TYPES_H
-#define MAPPING_EIGEN_TYPES_H
+#ifndef FASTER_LIO_EIGEN_TYPES_H
+#define FASTER_LIO_EIGEN_TYPES_H
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -81,4 +81,4 @@ constexpr auto less_vec2i = [](const Vec2i& v1, const Vec2i& v2) {
 
 }  // namespace faster_lio
 
-#endif  // MAPPING_EIGEN_TYPES_H
+#endif

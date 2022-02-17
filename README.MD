@@ -132,6 +132,8 @@ I0216 17:16:05.286808 26492 utils.h:54] > [ Undistort Pcl ] average time usage: 
 I0216 17:16:05.286816 26492 utils.h:59] >>> ===== Printing run time end =====
 ```
 
+Point clouds will be saved to PCD/scans.pcd by default. 
+
 - Online mode 
  
 Online mode could be launched through rosrun/roslaunch/directly call. We use roslaunch as an example:

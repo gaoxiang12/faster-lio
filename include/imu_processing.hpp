@@ -20,7 +20,7 @@ constexpr int MAX_INI_COUNT = 20;
 
 bool time_list(const PointType &x, const PointType &y) { return (x.curvature < y.curvature); };
 
-/// *************IMU Process and undistortion
+/// IMU Process and undistortion
 class ImuProcess {
    public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -38,7 +38,7 @@ class ImuProcess {
                  PointCloudType::Ptr pcl_un_);
 
     std::ofstream fout_imu_;
-    Eigen::Matrix<double, 12, 12> Q;
+    Eigen::Matrix<double, 12, 12> Q_;
     common::V3D cov_acc_;
     common::V3D cov_gyr_;
     common::V3D cov_acc_scale_;
@@ -47,7 +47,7 @@ class ImuProcess {
     common::V3D cov_bias_acc_;
 
    private:
-    void IMU_init(const common::MeasureGroup &meas, esekfom::esekf<state_ikfom, 12, input_ikfom> &kf_state, int &N);
+    void IMUInit(const common::MeasureGroup &meas, esekfom::esekf<state_ikfom, 12, input_ikfom> &kf_state, int &N);
     void UndistortPcl(const common::MeasureGroup &meas, esekfom::esekf<state_ikfom, 12, input_ikfom> &kf_state,
                       PointCloudType &pcl_out);
 
@@ -70,7 +70,7 @@ class ImuProcess {
 
 ImuProcess::ImuProcess() : b_first_frame_(true), imu_need_init_(true) {
     init_iter_num_ = 1;
-    Q = process_noise_cov();
+    Q_ = process_noise_cov();
     cov_acc_ = common::V3D(0.1, 0.1, 0.1);
     cov_gyr_ = common::V3D(0.1, 0.1, 0.1);
     cov_bias_gyr_ = common::V3D(0.0001, 0.0001, 0.0001);
@@ -110,7 +110,7 @@ void ImuProcess::SetGyrBiasCov(const common::V3D &b_g) { cov_bias_gyr_ = b_g; }
 
 void ImuProcess::SetAccBiasCov(const common::V3D &b_a) { cov_bias_acc_ = b_a; }
 
-void ImuProcess::IMU_init(const common::MeasureGroup &meas, esekfom::esekf<state_ikfom, 12, input_ikfom> &kf_state,
+void ImuProcess::IMUInit(const common::MeasureGroup &meas, esekfom::esekf<state_ikfom, 12, input_ikfom> &kf_state,
                           int &N) {
     /** 1. initializing the gravity_, gyro bias, acc and gyro covariance
      ** 2. normalize the acceleration measurenments to unit gravity_ **/
@@ -214,11 +214,11 @@ void ImuProcess::UndistortPcl(const common::MeasureGroup &meas, esekfom::esekf<s
 
         in.acc = acc_avr;
         in.gyro = angvel_avr;
-        Q.block<3, 3>(0, 0).diagonal() = cov_gyr_;
-        Q.block<3, 3>(3, 3).diagonal() = cov_acc_;
-        Q.block<3, 3>(6, 6).diagonal() = cov_bias_gyr_;
-        Q.block<3, 3>(9, 9).diagonal() = cov_bias_acc_;
-        kf_state.predict(dt, Q, in);
+        Q_.block<3, 3>(0, 0).diagonal() = cov_gyr_;
+        Q_.block<3, 3>(3, 3).diagonal() = cov_acc_;
+        Q_.block<3, 3>(6, 6).diagonal() = cov_bias_gyr_;
+        Q_.block<3, 3>(9, 9).diagonal() = cov_bias_acc_;
+        kf_state.predict(dt, Q_, in);
 
         /* save the poses at each IMU measurements */
         imu_state = kf_state.get_x();
@@ -236,7 +236,7 @@ void ImuProcess::UndistortPcl(const common::MeasureGroup &meas, esekfom::esekf<s
     /*** calculated the pos and attitude prediction at the frame-end ***/
     double note = pcl_end_time > imu_end_time ? 1.0 : -1.0;
     dt = note * (pcl_end_time - imu_end_time);
-    kf_state.predict(dt, Q, in);
+    kf_state.predict(dt, Q_, in);
 
     imu_state = kf_state.get_x();
     last_imu_ = meas.imu_.back();
@@ -294,7 +294,7 @@ void ImuProcess::Process(const common::MeasureGroup &meas, esekfom::esekf<state_
 
     if (imu_need_init_) {
         /// The very first lidar frame
-        IMU_init(meas, kf_state, init_iter_num_);
+        IMUInit(meas, kf_state, init_iter_num_);
 
         imu_need_init_ = true;
 
