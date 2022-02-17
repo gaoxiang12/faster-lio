@@ -137,8 +137,9 @@ I0216 17:16:05.286816 26492 utils.h:59] >>> ===== Printing run time end =====
 
 # Acknowledgements
 
-- We thank the authors of FastLIO2, LOAM for their great jobs.
+- We thank the authors of [FastLIO2](https://github.com/hku-mars/FAST_LIO), LOAM for their great jobs.
 - Please cite our work if you are using FasterLIO in academic work. Bibtex citation will be privided soon.
+- This work is supported by Idriver+ Technologies Co. Ltd.
 
 # Known Issues
 
