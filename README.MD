@@ -81,7 +81,7 @@ tar -xvf tbb2018_20170726oss_lin.tgz
 - specify the tbb directory in the cmake stage:
 
 ```bash
-cmake .. -DCUSTOM_TBB_DIR=../thirdparty/tbb2018_20170726oss
+cmake .. -DCUSTOM_TBB_DIR=`pwd`/../thirdparty/tbb2018_20170726oss
 ```
 
 Then just build FasterLIO with make.

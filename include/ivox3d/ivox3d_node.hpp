@@ -425,6 +425,14 @@ template <typename PointT, int dim>
 uint32_t IVoxNodePhc<PointT, dim>::CalculatePhcIndex(const PointT& pt) const {
     Eigen::Matrix<float, dim, 1> eposf = (pt.getVector3fMap() - min_cube_) * phc_side_length_inv_;
     Eigen::Matrix<int, dim, 1> eposi = eposf.template cast<int>();
+    for (int i = 0; i < dim; ++i) {
+        if (eposi(i, 0) < 0) {
+            eposi(i, 0) = 0;
+        }
+        if (eposi(i, 0) > std::pow(2, phc_order_)) {
+            eposi(i, 0) = std::pow(2, phc_order_) - 1;
+        }
+    }
     std::array<uint8_t, 3> apos{eposi(0), eposi(1), eposi(2)};
     std::array<uint8_t, 3> tmp = hilbert::v2::PositionToIndex(apos);
 
