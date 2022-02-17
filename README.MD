@@ -4,13 +4,18 @@ This is the code repository of FasterLIO by Chunge Bai, Tao Xiang, Yajie Chen, H
 
 Faster-LIO is a light-weight Lidar-inertial odometry for lidar pose tracking and point cloud mapping. It is developed on
 the base of [FastLIO2](https://github.com/hku-mars/FAST_LIO) and provides about 1.5-2x speed increase. It achieves
-almost 1k-2k hz for solid-state lidars and over 100 hz for a typical 32 lines spinning lidar. Please refer to our paper
+almost 1k-2k hz for solid-state lidars and over 100 hz for a typical 32 lines spinning lidar. Please refer to [our paper](./doc/faster-lio.pdf)
 for more details.
 
-![fps](./doc/fps-fasterlio.png)
-![pcd](./doc/faster-lio-nclt.png)
+Below is the FPS tested with avia and velodyne 32 spinning lidar from FastLIO2 and [NCLT](http://robots.engin.umich.edu/nclt/), where "AMD" is tested with  AMD R7 5800X and "Intel" tested with Intel Xeon Gold 5218.
 
-<center><embed src="./doc/faster-lio.pdf" width="850" height="600"></center>
+<div  align="center">  
+<img src="https://github.com/gaoxiang12/faster-lio/blob/main/doc/fps-fasterlio.png" width = "1080" align=center />
+</div>
+
+<div  align="center">  
+<img src="https://github.com/gaoxiang12/faster-lio/blob/main/doc/faster-lio-nclt.png" width = "1080" align=center />
+</div>
 
 # Quick Start
 
