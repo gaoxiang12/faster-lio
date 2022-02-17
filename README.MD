@@ -33,7 +33,9 @@ FasterLIO is tested in Ubuntu 18.04 and Ubuntu 20.04. Please install the followi
 
 FasterLIO can be compiled by plain cmake or catkin_make. In Ubuntu 20.04, the compile step is relatively simple.
 
-1. Plain cmake Use the following commands to build FasterLIO:
+1. Plain cmake 
+
+Use the following commands to build FasterLIO:
 
 ```bin/bash
 mkdir build
