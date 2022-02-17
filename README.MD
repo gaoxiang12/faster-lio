@@ -130,7 +130,9 @@ I0216 17:16:05.286808 26492 utils.h:54] > [ Undistort Pcl ] average time usage: 
 I0216 17:16:05.286816 26492 utils.h:59] >>> ===== Printing run time end =====
 ```
 
-- Online mode Online mode could be launched through rosrun/roslaunch/directly call. We use roslaunch as an example:
+- Online mode 
+ 
+Online mode could be launched through rosrun/roslaunch/directly call. We use roslaunch as an example:
 
 1. Launch faster-lio: ```roslaunch faster_lio mapping_avia.launch``` This will give you a rviz window.
 2. Play the bags using ```rosbag play your bag file``` to see the online outputs.
