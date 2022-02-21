@@ -1,0 +1,28 @@
+# Huge, MEE SUSTech
+# Email: zhuhu00@foxmail.com
+
+version: '2.3'
+services:
+  fasterlio-ubuntu20:
+    image: zhuhu/fasterlio-ubuntu20:0.1
+    build: .
+
+    command: lxterminal
+    runtime: nvidia
+    privileged: true
+    stdin_open: true
+    tty: true
+    environment:
+        - DISPLAY
+        - QT_X11_NO_MITSHM=1
+
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ../../faster-lio:/root/catkin_ws/src/faster-lio
+      - ${DATASET_DIR}:/root/Dataset
+
+    entrypoint: /ros_entrypoint.sh
+    network_mode: host
+
+volumes:
+  fasterlio-ubuntu20:
