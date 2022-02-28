@@ -62,7 +62,7 @@ class ImuProcess {
     common::V3D mean_gyr_;
     common::V3D angvel_last_;
     common::V3D acc_s_last_;
-    double last_lidar_end_time_;
+    double last_lidar_end_time_ = 0;
     int init_iter_num_ = 1;
     bool b_first_frame_ = true;
     bool imu_need_init_ = true;
@@ -111,7 +111,7 @@ void ImuProcess::SetGyrBiasCov(const common::V3D &b_g) { cov_bias_gyr_ = b_g; }
 void ImuProcess::SetAccBiasCov(const common::V3D &b_a) { cov_bias_acc_ = b_a; }
 
 void ImuProcess::IMUInit(const common::MeasureGroup &meas, esekfom::esekf<state_ikfom, 12, input_ikfom> &kf_state,
-                          int &N) {
+                         int &N) {
     /** 1. initializing the gravity_, gyro bias, acc and gyro covariance
      ** 2. normalize the acceleration measurenments to unit gravity_ **/
 
