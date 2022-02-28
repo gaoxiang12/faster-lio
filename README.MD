@@ -164,7 +164,11 @@ Online mode could be launched through rosrun/roslaunch/directly call. We use ros
 # Acknowledgements
 
 - We thank the authors of [FastLIO2](https://github.com/hku-mars/FAST_LIO), LOAM for their great jobs.
-- Please cite our work if you are using FasterLIO in academic work. Bibtex citation will be privided soon.
+- Please cite our work if you are using FasterLIO in academic work. Bibtex is provided here (early-access version):
+```
+@ARTICLE{9718203,  author={Bai, Chunge and Xiao, Tao and Chen, Yajie and Wang, Haoqian and Zhang, Fang and Gao, Xiang},  journal={IEEE Robotics and Automation Letters},   title={Faster-LIO: Lightweight Tightly Coupled Lidar-inertial Odometry using Parallel Sparse Incremental Voxels},   year={2022},  doi={10.1109/LRA.2022.3152830}}
+```
+
 - This work is supported by Idriver+ Technologies Co. Ltd.
 
 # Known Issues
