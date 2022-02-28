@@ -18,6 +18,26 @@ Below is the FPS tested with avia and velodyne 32 spinning lidar from FastLIO2 a
 </div>
 
 # Quick Start
+## Docker 
+```bash
+git clone 
+cd faster-lio/docker
+docker-compose build
+docker-compose up
+```
+update `bag` file path in `.env`, then run.
+```bash
+catkin_make
+source devel/setup.bash
+roslaunch faster_lio mapping_avia.launch
+```
+Open another terminal, then play `bag` file.
+
+### issue
+`QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-root'` 
+
+**Don't worry, it can run normally**. you can run `source /etc/profile&& source /opt/ros/noetic/setup.bash && source devel/setup.bash`, then `run roslaunch xxx`
+
 
 ## Dependency
 
