@@ -103,6 +103,7 @@ tar -xvf tbb2018_20170726oss_lin.tgz
 - specify the tbb directory in the cmake stage:
 
 ```bash
+cd ../build
 cmake .. -DCUSTOM_TBB_DIR=`pwd`/../thirdparty/tbb2018_20170726oss
 ```
 
