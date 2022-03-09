@@ -297,6 +297,9 @@ void LaserMapping::Run() {
     }
     scan_down_world_->resize(cur_pts);
     nearest_points_.resize(cur_pts);
+    residuals_.resize(cur_pts, 0);
+    point_selected_surf_.resize(cur_pts, true);
+    plane_coef_.resize(cur_pts, common::V4F::Zero());
 
     // ICP and iterated Kalman filter update
     Timer::Evaluate(
@@ -550,10 +553,6 @@ void LaserMapping::ObsModel(state_ikfom &s, esekfom::dyn_share_datastruct<double
         index[i] = i;
     }
 
-    std::vector<float> residuals(cnt_pts, 0);
-    std::vector<bool> point_selected_surf(cnt_pts, true);   // selected points
-    common::VV4F plane_coef(cnt_pts, common::V4F::Zero());  // plane coeffs
-
     Timer::Evaluate(
         [&, this]() {
             auto R_wl = (s.rot * s.offset_R_L_I).cast<float>();
@@ -573,22 +572,22 @@ void LaserMapping::ObsModel(state_ikfom &s, esekfom::dyn_share_datastruct<double
                 if (ekfom_data.converge) {
                     /** Find the closest surfaces in the map **/
                     ivox_->GetClosestPoint(point_world, points_near, options::NUM_MATCH_POINTS);
-                    point_selected_surf[i] = points_near.size() >= options::MIN_NUM_MATCH_POINTS;
-                    if (point_selected_surf[i]) {
-                        point_selected_surf[i] =
-                            common::esti_plane(plane_coef[i], points_near, options::ESTI_PLANE_THRESHOLD);
+                    point_selected_surf_[i] = points_near.size() >= options::MIN_NUM_MATCH_POINTS;
+                    if (point_selected_surf_[i]) {
+                        point_selected_surf_[i] =
+                            common::esti_plane(plane_coef_[i], points_near, options::ESTI_PLANE_THRESHOLD);
                     }
                 }
 
-                if (point_selected_surf[i]) {
+                if (point_selected_surf_[i]) {
                     auto temp = point_world.getVector4fMap();
                     temp[3] = 1.0;
-                    float pd2 = plane_coef[i].dot(temp);
+                    float pd2 = plane_coef_[i].dot(temp);
 
                     bool valid_corr = p_body.norm() > 81 * pd2 * pd2;
                     if (valid_corr) {
-                        point_selected_surf[i] = true;
-                        residuals[i] = pd2;
+                        point_selected_surf_[i] = true;
+                        residuals_[i] = pd2;
                     }
                 }
             });
@@ -600,10 +599,10 @@ void LaserMapping::ObsModel(state_ikfom &s, esekfom::dyn_share_datastruct<double
     corr_pts_.resize(cnt_pts);
     corr_norm_.resize(cnt_pts);
     for (int i = 0; i < cnt_pts; i++) {
-        if (point_selected_surf[i]) {
-            corr_norm_[effect_feat_num_] = std::move(plane_coef[i]);
+        if (point_selected_surf_[i]) {
+            corr_norm_[effect_feat_num_] = std::move(plane_coef_[i]);
             corr_pts_[effect_feat_num_] = scan_down_body_->points[i].getVector4fMap();
-            corr_pts_[effect_feat_num_][3] = residuals[i];
+            corr_pts_[effect_feat_num_][3] = residuals_[i];
 
             effect_feat_num_++;
         }
