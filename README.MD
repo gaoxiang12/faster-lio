@@ -171,10 +171,12 @@ Online mode could be launched through rosrun/roslaunch/directly call. We use ros
 @ARTICLE{9718203,  
 author={Bai, Chunge and Xiao, Tao and Chen, Yajie and Wang, Haoqian and Zhang, Fang and Gao, Xiang},  
 journal={IEEE Robotics and Automation Letters},   
-title={Faster-LIO: Lightweight Tightly Coupled Lidar-inertial Odometry using Parallel Sparse Incremental Voxels},   
+title={Faster-LIO: Lightweight Tightly Coupled Lidar-Inertial Odometry Using Parallel Sparse Incremental Voxels},   
 year={2022},  
-doi={10.1109/LRA.2022.3152830}
-}
+volume={7},  
+number={2},  
+pages={4861-4868},  
+doi={10.1109/LRA.2022.3152830}}
 ```
 
 
