@@ -600,7 +600,7 @@ void LaserMapping::ObsModel(state_ikfom &s, esekfom::dyn_share_datastruct<double
     corr_norm_.resize(cnt_pts);
     for (int i = 0; i < cnt_pts; i++) {
         if (point_selected_surf_[i]) {
-            corr_norm_[effect_feat_num_] = std::move(plane_coef_[i]);
+            corr_norm_[effect_feat_num_] = plane_coef_[i];
             corr_pts_[effect_feat_num_] = scan_down_body_->points[i].getVector4fMap();
             corr_pts_[effect_feat_num_][3] = residuals_[i];
 
