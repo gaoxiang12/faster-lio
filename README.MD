@@ -24,7 +24,9 @@ git clone
 cd faster-lio/docker
 docker-compose build
 docker-compose up
-```
+```  
+Before entering `docker-compose up` command, you should enter `xhost +local:docker` in the local terminal to enable docker to communicate with Xserver on the host.  
+
 update `bag` file path in `.env`, then run.
 ```bash
 catkin_make
