@@ -19,6 +19,7 @@ int main(int argc, char **argv) {
     FLAGS_stderrthreshold = google::INFO;
     FLAGS_colorlogtostderr = true;
     google::InitGoogleLogging(argv[0]);
+    google::ParseCommandLineFlags(&argc, &argv, true);
 
     ros::init(argc, argv, "faster_lio");
     ros::NodeHandle nh;
