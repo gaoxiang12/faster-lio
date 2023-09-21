@@ -118,6 +118,8 @@ class LaserMapping {
     ros::Publisher pub_laser_cloud_effect_world_;
     ros::Publisher pub_odom_aft_mapped_;
     ros::Publisher pub_path_;
+    std::string tf_imu_frame_;
+    std::string tf_world_frame_;
 
     std::mutex mtx_buffer_;
     std::deque<double> time_buffer_;

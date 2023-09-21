@@ -64,6 +64,9 @@ bool LaserMapping::LoadParams(ros::NodeHandle &nh) {
     nh.param<bool>("publish/dense_publish_en", dense_pub_en_, false);
     nh.param<bool>("publish/scan_bodyframe_pub_en", scan_body_pub_en_, true);
     nh.param<bool>("publish/scan_effect_pub_en", scan_effect_pub_en_, false);
+    nh.param<std::string>("publish/tf_imu_frame", tf_imu_frame_, "body");
+    nh.param<std::string>("publish/tf_world_frame", tf_world_frame_, "camera_init");
+
 
     nh.param<int>("max_iteration", options::NUM_MAX_ITERATIONS, 4);
     nh.param<float>("esti_plane_threshold", options::ESTI_PLANE_THRESHOLD, 0.1);
@@ -152,6 +155,8 @@ bool LaserMapping::LoadParamsFromYAML(const std::string &yaml_file) {
         dense_pub_en_ = yaml["publish"]["dense_publish_en"].as<bool>();
         scan_body_pub_en_ = yaml["publish"]["scan_bodyframe_pub_en"].as<bool>();
         scan_effect_pub_en_ = yaml["publish"]["scan_effect_pub_en"].as<bool>();
+        tf_imu_frame_ = yaml["publish"]["tf_imu_frame"].as<std::string>("body");
+        tf_world_frame_ = yaml["publish"]["tf_world_frame"].as<std::string>("camera_init");
         path_save_en_ = yaml["path_save_en"].as<bool>();
 
         options::NUM_MAX_ITERATIONS = yaml["max_iteration"].as<int>();
@@ -697,7 +702,7 @@ void LaserMapping::PublishOdometry(const ros::Publisher &pub_odom_aft_mapped) {
     q.setY(odom_aft_mapped_.pose.pose.orientation.y);
     q.setZ(odom_aft_mapped_.pose.pose.orientation.z);
     transform.setRotation(q);
-    br.sendTransform(tf::StampedTransform(transform, odom_aft_mapped_.header.stamp, "camera_init", "body"));
+    br.sendTransform(tf::StampedTransform(transform, odom_aft_mapped_.header.stamp, tf_world_frame_, tf_imu_frame_));
 }
 
 void LaserMapping::PublishFrameWorld() {
