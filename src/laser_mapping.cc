@@ -67,7 +67,6 @@ bool LaserMapping::LoadParams(ros::NodeHandle &nh) {
     nh.param<std::string>("publish/tf_imu_frame", tf_imu_frame_, "body");
     nh.param<std::string>("publish/tf_world_frame", tf_world_frame_, "camera_init");
 
-
     nh.param<int>("max_iteration", options::NUM_MAX_ITERATIONS, 4);
     nh.param<float>("esti_plane_threshold", options::ESTI_PLANE_THRESHOLD, 0.1);
     nh.param<std::string>("map_file_path", map_file_path_, "");
