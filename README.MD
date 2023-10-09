@@ -118,6 +118,10 @@ Download the avia/nclt bags in your computer:
 - [avia bags](https://drive.google.com/drive/folders/1YL5MQVYgAM8oAWUm7e3OGXZBPKkanmY1?usp=sharing)
 - [nclt bags](https://drive.google.com/drive/folders/1VBK5idI1oyW0GC_I_Hxh63aqam3nocNK)
 
+The link of the dataset is outdated.  Please use the NCLT bags in SAD datasets: 
+BaiduYun: https://pan.baidu.com/s/1ELOcF1UTKdfiKBAaXnE8sQ?pwd=feky access code: feky
+OneDrive：https://1drv.ms/u/s!AgNFVSzSYXMahcEZejoUwCaHRcactQ?e=YsOYy2
+
 ## Run FasterLIO
 
 FasterLIO can be called like a plain binary program. It can run in offline mode or online mode like any ros program.
