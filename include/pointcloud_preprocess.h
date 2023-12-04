@@ -53,9 +53,30 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point,
                                   )
 // clang-format on
 
+namespace hesai_ros {
+struct EIGEN_ALIGN16 Point {
+    PCL_ADD_POINT4D;
+    float intensity;
+    double timestamp;
+    uint16_t ring;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+}  // namespace hesai_ros
+
+// clang-format off
+POINT_CLOUD_REGISTER_POINT_STRUCT(hesai_ros::Point,
+                                  (float, x, x)
+                                  (float, y, y)
+                                  (float, z, z)
+                                  (float, intensity, intensity)
+                                  (double, timestamp, timestamp)
+                                  (std::uint16_t, ring, ring)
+)
+// clang-format on
+
 namespace faster_lio {
 
-enum class LidarType { AVIA = 1, VELO32, OUST64 };
+enum class LidarType { AVIA = 1, VELO32, OUST64,  HESAIxt32}; //{1, 2, 3, 4}
 
 /**
  * point cloud preprocess
