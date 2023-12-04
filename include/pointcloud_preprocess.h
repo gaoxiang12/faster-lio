@@ -107,6 +107,7 @@ class PointCloudPreprocess {
     void AviaHandler(const livox_ros_driver::CustomMsg::ConstPtr &msg);
     void Oust64Handler(const sensor_msgs::PointCloud2::ConstPtr &msg);
     void VelodyneHandler(const sensor_msgs::PointCloud2::ConstPtr &msg);
+    void HesaiHandler(const sensor_msgs::PointCloud2::ConstPtr &msg);
 
     PointCloudType cloud_full_, cloud_out_;
 
