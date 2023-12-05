@@ -37,7 +37,7 @@ class ImuProcess {
     void Process(const common::MeasureGroup &meas, esekfom::esekf<state_ikfom, 12, input_ikfom> &kf_state,
                  PointCloudType::Ptr pcl_un_);
 
-    std::ofstream fout_imu_;
+    // std::ofstream fout_imu_;
     Eigen::Matrix<double, 12, 12> Q_;
     common::V3D cov_acc_;
     common::V3D cov_gyr_;
@@ -308,7 +308,7 @@ void ImuProcess::Process(const common::MeasureGroup &meas, esekfom::esekf<state_
             cov_acc_ = cov_acc_scale_;
             cov_gyr_ = cov_gyr_scale_;
             LOG(INFO) << "IMU Initial Done";
-            fout_imu_.open(common::DEBUG_FILE_DIR("imu_.txt"), std::ios::out);
+            // fout_imu_.open(common::DEBUG_FILE_DIR("imu_.txt"), std::ios::out);
         }
 
         return;

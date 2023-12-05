@@ -26,6 +26,7 @@ find_package(catkin REQUIRED COMPONENTS
         tf
         message_generation
         eigen_conversions
+        livox_ros_driver2
         )
 
 

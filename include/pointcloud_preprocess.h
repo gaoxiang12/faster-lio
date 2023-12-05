@@ -1,7 +1,7 @@
 #ifndef FASTER_LIO_POINTCLOUD_PROCESSING_H
 #define FASTER_LIO_POINTCLOUD_PROCESSING_H
 
-#include <livox_ros_driver/CustomMsg.h>
+#include <livox_ros_driver2/CustomMsg.h>
 #include <pcl_conversions/pcl_conversions.h>
 
 #include <pcl/point_cloud.h>
@@ -55,7 +55,7 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point,
 
 namespace faster_lio {
 
-enum class LidarType { AVIA = 1, VELO32, OUST64 };
+enum class LidarType { MID360 = 1, VELO32, OUST64 };
 
 /**
  * point cloud preprocess
@@ -69,7 +69,7 @@ class PointCloudPreprocess {
     ~PointCloudPreprocess() = default;
 
     /// processors
-    void Process(const livox_ros_driver::CustomMsg::ConstPtr &msg, PointCloudType::Ptr &pcl_out);
+    void Process(const livox_ros_driver2::CustomMsg::ConstPtr &msg, PointCloudType::Ptr &pcl_out);
     void Process(const sensor_msgs::PointCloud2::ConstPtr &msg, PointCloudType::Ptr &pcl_out);
     void Set(LidarType lid_type, double bld, int pfilt_num);
 
@@ -83,13 +83,13 @@ class PointCloudPreprocess {
     void SetLidarType(LidarType lt) { lidar_type_ = lt; }
 
    private:
-    void AviaHandler(const livox_ros_driver::CustomMsg::ConstPtr &msg);
+    void Mid360Handler(const livox_ros_driver2::CustomMsg::ConstPtr &msg);
     void Oust64Handler(const sensor_msgs::PointCloud2::ConstPtr &msg);
     void VelodyneHandler(const sensor_msgs::PointCloud2::ConstPtr &msg);
 
     PointCloudType cloud_full_, cloud_out_;
 
-    LidarType lidar_type_ = LidarType::AVIA;
+    LidarType lidar_type_ = LidarType::MID360;
     bool feature_enabled_ = false;
     int point_filter_num_ = 1;
     int num_scans_ = 6;

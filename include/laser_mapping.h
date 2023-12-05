@@ -1,7 +1,7 @@
 #ifndef FASTER_LIO_LASER_MAPPING_H
 #define FASTER_LIO_LASER_MAPPING_H
 
-#include <livox_ros_driver/CustomMsg.h>
+#include <livox_ros_driver2/CustomMsg.h>
 #include <nav_msgs/Path.h>
 #include <pcl/filters/voxel_grid.h>
 #include <ros/ros.h>
@@ -44,7 +44,7 @@ class LaserMapping {
 
     // callbacks of lidar and imu
     void StandardPCLCallBack(const sensor_msgs::PointCloud2::ConstPtr &msg);
-    void LivoxPCLCallBack(const livox_ros_driver::CustomMsg::ConstPtr &msg);
+    void LivoxPCLCallBack(const livox_ros_driver2::CustomMsg::ConstPtr &msg);
     void IMUCallBack(const sensor_msgs::Imu::ConstPtr &msg_in);
 
     // sync lidar with imu
@@ -88,7 +88,6 @@ class LaserMapping {
     std::shared_ptr<ImuProcess> p_imu_ = nullptr;                 // imu process
 
     /// local map related
-    float det_range_ = 300.0f;
     double cube_len_ = 0;
     double filter_size_map_min_ = 0;
     bool localmap_initialized_ = false;

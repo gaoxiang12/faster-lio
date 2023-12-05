@@ -11,8 +11,8 @@ void PointCloudPreprocess::Set(LidarType lid_type, double bld, int pfilt_num) {
     point_filter_num_ = pfilt_num;
 }
 
-void PointCloudPreprocess::Process(const livox_ros_driver::CustomMsg::ConstPtr &msg, PointCloudType::Ptr &pcl_out) {
-    AviaHandler(msg);
+void PointCloudPreprocess::Process(const livox_ros_driver2::CustomMsg::ConstPtr &msg, PointCloudType::Ptr &pcl_out) {
+    Mid360Handler(msg);
     *pcl_out = cloud_out_;
 }
 
@@ -33,7 +33,7 @@ void PointCloudPreprocess::Process(const sensor_msgs::PointCloud2::ConstPtr &msg
     *pcl_out = cloud_out_;
 }
 
-void PointCloudPreprocess::AviaHandler(const livox_ros_driver::CustomMsg::ConstPtr &msg) {
+void PointCloudPreprocess::Mid360Handler(const livox_ros_driver2::CustomMsg::ConstPtr &msg) {
     cloud_out_.clear();
     cloud_full_.clear();
     int plsize = msg->point_num;
@@ -48,8 +48,7 @@ void PointCloudPreprocess::AviaHandler(const livox_ros_driver::CustomMsg::ConstP
     }
 
     std::for_each(std::execution::par_unseq, index.begin(), index.end(), [&](const uint &i) {
-        if ((msg->points[i].line < num_scans_) &&
-            ((msg->points[i].tag & 0x30) == 0x10 || (msg->points[i].tag & 0x30) == 0x00)) {
+        if ((msg->points[i].tag & 0x30) == 0x10 || (msg->points[i].tag & 0x30) == 0x00) {
             if (i % point_filter_num_ == 0) {
                 cloud_full_[i].x = msg->points[i].x;
                 cloud_full_[i].y = msg->points[i].y;
@@ -59,12 +58,12 @@ void PointCloudPreprocess::AviaHandler(const livox_ros_driver::CustomMsg::ConstP
                     msg->points[i].offset_time /
                     float(1000000);  // use curvature as time of each laser points, curvature unit: ms
 
-                if ((abs(cloud_full_[i].x - cloud_full_[i - 1].x) > 1e-7) ||
-                    (abs(cloud_full_[i].y - cloud_full_[i - 1].y) > 1e-7) ||
-                    (abs(cloud_full_[i].z - cloud_full_[i - 1].z) > 1e-7) &&
-                        (cloud_full_[i].x * cloud_full_[i].x + cloud_full_[i].y * cloud_full_[i].y +
-                             cloud_full_[i].z * cloud_full_[i].z >
-                         (blind_ * blind_))) {
+                if (((abs(cloud_full_[i].x - cloud_full_[i - 1].x) > 1e-7) ||
+                     (abs(cloud_full_[i].y - cloud_full_[i - 1].y) > 1e-7) ||
+                     (abs(cloud_full_[i].z - cloud_full_[i - 1].z) > 1e-7)) &&
+                    cloud_full_[i].x * cloud_full_[i].x + cloud_full_[i].y * cloud_full_[i].y +
+                            cloud_full_[i].z * cloud_full_[i].z >
+                        (blind_ * blind_)) {
                     is_valid_pt[i] = true;
                 }
             }

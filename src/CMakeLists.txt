@@ -5,7 +5,8 @@ add_library(${PROJECT_NAME}
         utils.cc
         )
 
-add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencpp livox_ros_driver_gencpp)
+# add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencpp livox_ros_driver2_gencpp)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencpp)
 
 target_link_libraries(${PROJECT_NAME}
         ${catkin_LIBRARIES}

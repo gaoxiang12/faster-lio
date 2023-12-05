@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
 
     LOG(INFO) << "Go!";
     for (const rosbag::MessageInstance &m : rosbag::View(bag)) {
-        auto livox_msg = m.instantiate<livox_ros_driver::CustomMsg>();
+        auto livox_msg = m.instantiate<livox_ros_driver2::CustomMsg>();
         if (livox_msg) {
             faster_lio::Timer::Evaluate(
                 [&laser_mapping, &livox_msg]() {
