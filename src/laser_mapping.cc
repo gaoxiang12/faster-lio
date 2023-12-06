@@ -22,11 +22,32 @@ bool LaserMapping::InitROS(ros::NodeHandle &nh) {
         [this](state_ikfom &s, esekfom::dyn_share_datastruct<double> &ekfom_data) { ObsModel(s, ekfom_data); },
         options::NUM_MAX_ITERATIONS, epsi.data());
 
+    if (localization_mode_en_) {
+        // Initialization phase of localization mode
+        kf_.set_icp_param(10, 100);
+
+        pcl::PCDReader reader;
+        std::string file_name_map_kdtree = std::string("map_for_localization.pcd");
+        std::string all_points_dir_map_kdtree(std::string(std::string(ROOT_DIR) + "PCD/") + file_name_map_kdtree);
+        CloudPtr map_points{new PointCloudType()};
+        reader.read(all_points_dir_map_kdtree, *map_points);
+        ivox_->AddPoints(map_points->points);
+
+        sensor_msgs::PointCloud2 mapCloudmsg_;
+        pcl::toROSMsg(*map_points, mapCloudmsg_);
+        mapCloudmsg_.header.frame_id = "world";
+
+        LOG(INFO) << "Load PCD map succeed! Please wait 2s for publishing the map!";
+        ros::Duration(2.0).sleep();
+        LOG(INFO) << "Init prior map succeed!";
+
+        pub_map_cloud_world_.publish(mapCloudmsg_);
+    }
     return true;
 }
 
 bool LaserMapping::InitWithoutROS(const std::string &config_yaml) {
-    LOG(INFO) << "init laser mapping from " << config_yaml;
+    LOG(INFO) << "Init laser mapping from " << config_yaml;
     if (!LoadParamsFromYAML(config_yaml)) {
         return false;
     }
@@ -42,9 +63,9 @@ bool LaserMapping::InitWithoutROS(const std::string &config_yaml) {
         options::NUM_MAX_ITERATIONS, epsi.data());
 
     if (std::is_same<IVoxType, IVox<3, IVoxNodeType::PHC, pcl::PointXYZI>>::value == true) {
-        LOG(INFO) << "using phc ivox";
+        LOG(INFO) << "Using phc ivox";
     } else if (std::is_same<IVoxType, IVox<3, IVoxNodeType::DEFAULT, pcl::PointXYZI>>::value == true) {
-        LOG(INFO) << "using default ivox";
+        LOG(INFO) << "Using default ivox";
     }
 
     return true;
@@ -58,41 +79,39 @@ bool LaserMapping::LoadParams(ros::NodeHandle &nh) {
     common::V3D lidar_T_wrt_IMU;
     common::M3D lidar_R_wrt_IMU;
 
-    nh.param<bool>("path_save_en", path_save_en_, true);
-    nh.param<bool>("publish/path_publish_en", path_pub_en_, true);
-    nh.param<bool>("publish/scan_publish_en", scan_pub_en_, true);
-    nh.param<bool>("publish/dense_publish_en", dense_pub_en_, false);
-    nh.param<bool>("publish/scan_bodyframe_pub_en", scan_body_pub_en_, true);
-    nh.param<bool>("publish/scan_effect_pub_en", scan_effect_pub_en_, false);
-    nh.param<std::string>("publish/tf_imu_frame", tf_imu_frame_, "body");
-    nh.param<std::string>("publish/tf_world_frame", tf_world_frame_, "world");
+    nh.param<bool>("/localization_mode_en", localization_mode_en_, false);
+    nh.param<bool>("/publish/path_publish_en", path_pub_en_, true);
+    nh.param<bool>("/publish/scan_publish_en", scan_pub_en_, true);
+    nh.param<bool>("/publish/dense_publish_en", dense_pub_en_, false);
+    nh.param<bool>("/publish/scan_bodyframe_pub_en", scan_body_pub_en_, true);
+    nh.param<bool>("/publish/scan_effect_pub_en", scan_effect_pub_en_, false);
+    nh.param<std::string>("/publish/tf_imu_frame", tf_imu_frame_, "body");
+    nh.param<std::string>("/publish/tf_world_frame", tf_world_frame_, "world");
 
-    nh.param<int>("max_iteration", options::NUM_MAX_ITERATIONS, 4);
-    nh.param<float>("esti_plane_threshold", options::ESTI_PLANE_THRESHOLD, 0.1);
-    nh.param<std::string>("map_file_path", map_file_path_, "");
-    nh.param<bool>("common/time_sync_en", time_sync_en_, false);
-    nh.param<double>("filter_size_surf", filter_size_surf_min, 0.5);
-    nh.param<double>("filter_size_map", filter_size_map_min_, 0.0);
-    nh.param<double>("cube_side_length", cube_len_, 200);
-    nh.param<double>("mapping/gyr_cov", gyr_cov, 0.1);
-    nh.param<double>("mapping/acc_cov", acc_cov, 0.1);
-    nh.param<double>("mapping/b_gyr_cov", b_gyr_cov, 0.0001);
-    nh.param<double>("mapping/b_acc_cov", b_acc_cov, 0.0001);
-    nh.param<double>("preprocess/blind", preprocess_->Blind(), 0.01);
-    nh.param<float>("preprocess/time_scale", preprocess_->TimeScale(), 1e-3);
-    nh.param<int>("preprocess/lidar_type", lidar_type, 1);
-    nh.param<int>("preprocess/scan_line", preprocess_->NumScans(), 16);
-    nh.param<int>("point_filter_num", preprocess_->PointFilterNum(), 2);
-    nh.param<bool>("feature_extract_enable", preprocess_->FeatureEnabled(), false);
-    nh.param<bool>("runtime_pos_log_enable", runtime_pos_log_, true);
-    nh.param<bool>("mapping/extrinsic_est_en", extrinsic_est_en_, true);
-    nh.param<bool>("pcd_save/pcd_save_en", pcd_save_en_, false);
-    nh.param<int>("pcd_save/interval", pcd_save_interval_, -1);
-    nh.param<std::vector<double>>("mapping/extrinsic_T", extrinT_, std::vector<double>());
-    nh.param<std::vector<double>>("mapping/extrinsic_R", extrinR_, std::vector<double>());
+    nh.param<int>("/max_iteration", options::NUM_MAX_ITERATIONS, 4);
+    nh.param<float>("/esti_plane_threshold", options::ESTI_PLANE_THRESHOLD, 0.1);
+    nh.param<bool>("/common/time_sync_en", time_sync_en_, false);
+    nh.param<double>("/filter_size_surf", filter_size_surf_min, 0.5);
+    nh.param<double>("/filter_size_map", filter_size_map_min_, 0.0);
+    nh.param<double>("/mapping/gyr_cov", gyr_cov, 0.1);
+    nh.param<double>("/mapping/acc_cov", acc_cov, 0.1);
+    nh.param<double>("/mapping/b_gyr_cov", b_gyr_cov, 0.0001);
+    nh.param<double>("/mapping/b_acc_cov", b_acc_cov, 0.0001);
+    nh.param<double>("/preprocess/blind", preprocess_->Blind(), 0.01);
+    nh.param<float>("/preprocess/time_scale", preprocess_->TimeScale(), 1e-3);
+    nh.param<int>("/preprocess/lidar_type", lidar_type, 1);
+    nh.param<int>("/preprocess/scan_line", preprocess_->NumScans(), 16);
+    nh.param<int>("/point_filter_num", preprocess_->PointFilterNum(), 2);
+    nh.param<bool>("/feature_extract_enable", preprocess_->FeatureEnabled(), false);
+    nh.param<bool>("/mapping/extrinsic_est_en", extrinsic_est_en_, true);
+    nh.param<bool>("/pcd_save/pcd_save_en", pcd_save_en_, false);
+    nh.param<int>("/pcd_save/interval", pcd_save_interval_, -1);
+    nh.param<bool>("/pcd_save/prior_map_save_en", prior_map_save_en_, false);
+    nh.param<std::vector<double>>("/mapping/extrinsic_T", extrinT_, std::vector<double>());
+    nh.param<std::vector<double>>("/mapping/extrinsic_R", extrinR_, std::vector<double>());
 
-    nh.param<float>("ivox_grid_resolution", ivox_options_.resolution_, 0.2);
-    nh.param<int>("ivox_nearby_type", ivox_nearby_type, 18);
+    nh.param<float>("/ivox_grid_resolution", ivox_options_.resolution_, 0.2);
+    nh.param<int>("/ivox_nearby_type", ivox_nearby_type, 18);
 
     LOG(INFO) << "lidar_type " << lidar_type;
     if (lidar_type == 1) {
@@ -105,7 +124,7 @@ bool LaserMapping::LoadParams(ros::NodeHandle &nh) {
         preprocess_->SetLidarType(LidarType::OUST64);
         LOG(INFO) << "Using OUST 64 Lidar";
     } else {
-        LOG(WARNING) << "unknown lidar_type";
+        LOG(WARNING) << "Unknown lidar_type";
         return false;
     }
 
@@ -118,7 +137,7 @@ bool LaserMapping::LoadParams(ros::NodeHandle &nh) {
     } else if (ivox_nearby_type == 26) {
         ivox_options_.nearby_type_ = IVoxType::NearbyType::NEARBY26;
     } else {
-        LOG(WARNING) << "unknown ivox_nearby_type, use NEARBY18";
+        LOG(WARNING) << "Unknown ivox_nearby_type, use NEARBY18";
         ivox_options_.nearby_type_ = IVoxType::NearbyType::NEARBY18;
     }
 
@@ -155,7 +174,6 @@ bool LaserMapping::LoadParamsFromYAML(const std::string &yaml_file) {
         scan_effect_pub_en_ = yaml["publish"]["scan_effect_pub_en"].as<bool>();
         tf_imu_frame_ = yaml["publish"]["tf_imu_frame"].as<std::string>("body");
         tf_world_frame_ = yaml["publish"]["tf_world_frame"].as<std::string>("world");
-        path_save_en_ = yaml["path_save_en"].as<bool>();
 
         options::NUM_MAX_ITERATIONS = yaml["max_iteration"].as<int>();
         options::ESTI_PLANE_THRESHOLD = yaml["esti_plane_threshold"].as<float>();
@@ -163,7 +181,6 @@ bool LaserMapping::LoadParamsFromYAML(const std::string &yaml_file) {
 
         filter_size_surf_min = yaml["filter_size_surf"].as<float>();
         filter_size_map_min_ = yaml["filter_size_map"].as<float>();
-        cube_len_ = yaml["cube_side_length"].as<int>();
         gyr_cov = yaml["mapping"]["gyr_cov"].as<float>();
         acc_cov = yaml["mapping"]["acc_cov"].as<float>();
         b_gyr_cov = yaml["mapping"]["b_gyr_cov"].as<float>();
@@ -183,7 +200,7 @@ bool LaserMapping::LoadParamsFromYAML(const std::string &yaml_file) {
         ivox_options_.resolution_ = yaml["ivox_grid_resolution"].as<float>();
         ivox_nearby_type = yaml["ivox_nearby_type"].as<int>();
     } catch (...) {
-        LOG(ERROR) << "bad conversion";
+        LOG(ERROR) << "Bad conversion";
         return false;
     }
 
@@ -198,7 +215,7 @@ bool LaserMapping::LoadParamsFromYAML(const std::string &yaml_file) {
         preprocess_->SetLidarType(LidarType::OUST64);
         LOG(INFO) << "Using OUST 64 Lidar";
     } else {
-        LOG(WARNING) << "unknown lidar_type";
+        LOG(WARNING) << "Unknown lidar_type";
         return false;
     }
 
@@ -211,7 +228,7 @@ bool LaserMapping::LoadParamsFromYAML(const std::string &yaml_file) {
     } else if (ivox_nearby_type == 26) {
         ivox_options_.nearby_type_ = IVoxType::NearbyType::NEARBY26;
     } else {
-        LOG(WARNING) << "unknown ivox_nearby_type, use NEARBY18";
+        LOG(WARNING) << "Unknown ivox_nearby_type, use NEARBY18";
         ivox_options_.nearby_type_ = IVoxType::NearbyType::NEARBY18;
     }
 
@@ -233,8 +250,8 @@ bool LaserMapping::LoadParamsFromYAML(const std::string &yaml_file) {
 void LaserMapping::SubAndPubToROS(ros::NodeHandle &nh) {
     // ROS subscribe initialization
     std::string lidar_topic, imu_topic;
-    nh.param<std::string>("common/lid_topic", lidar_topic, "/livox/lidar");
-    nh.param<std::string>("common/imu_topic", imu_topic, "/livox/imu");
+    nh.param<std::string>("/common/lid_topic", lidar_topic, "/livox/lidar");
+    nh.param<std::string>("/common/imu_topic", imu_topic, "/livox/imu");
 
     if (preprocess_->GetLidarType() == LidarType::MID360) {
         sub_pcl_ = nh.subscribe<livox_ros_driver2::CustomMsg>(
@@ -251,11 +268,25 @@ void LaserMapping::SubAndPubToROS(ros::NodeHandle &nh) {
     path_.header.stamp = ros::Time::now();
     path_.header.frame_id = "world";
 
-    pub_laser_cloud_world_ = nh.advertise<sensor_msgs::PointCloud2>("/cloud_registered", 100000);
-    pub_laser_cloud_body_ = nh.advertise<sensor_msgs::PointCloud2>("/cloud_registered_body", 100000);
-    pub_laser_cloud_effect_world_ = nh.advertise<sensor_msgs::PointCloud2>("/cloud_registered_effect_world", 100000);
-    pub_odom_aft_mapped_ = nh.advertise<nav_msgs::Odometry>("/Odometry", 100000);
-    pub_path_ = nh.advertise<nav_msgs::Path>("/path", 100000);
+    pub_laser_cloud_world_ = nh.advertise<sensor_msgs::PointCloud2>("cloud_registered", 100);
+    pub_laser_cloud_body_ = nh.advertise<sensor_msgs::PointCloud2>("cloud_registered_body", 100);
+    pub_laser_cloud_effect_world_ = nh.advertise<sensor_msgs::PointCloud2>("cloud_registered_effect_world", 100);
+    pub_odom_aft_mapped_ = nh.advertise<nav_msgs::Odometry>("odometry", 100);
+    pub_path_ = nh.advertise<nav_msgs::Path>("path", 100);
+
+    if (localization_mode_en_) {
+        pub_map_cloud_world_ = nh.advertise<sensor_msgs::PointCloud2>("map", 100);
+
+        localization_init_timer_ = nh.createTimer(
+            ros::Duration(2.0 + 5.0),
+            [this](const ros::TimerEvent &event) {
+                LOG(INFO) << "Initialization of localization done *~*";
+                kf_.set_icp_param(1, options::NUM_MAX_ITERATIONS);
+                Timer::PrintAll();
+                Timer::ClearAll();
+            },
+            true);
+    }
 }
 
 LaserMapping::LaserMapping() {
@@ -277,7 +308,7 @@ void LaserMapping::Run() {
 
     /// the first scan
     if (flg_first_scan_) {
-        ivox_->AddPoints(scan_undistort_->points);
+        if (!localization_mode_en_) ivox_->AddPoints(scan_undistort_->points);
         first_lidar_time_ = measures_.lidar_bag_time_;
         flg_first_scan_ = false;
         return;
@@ -318,7 +349,7 @@ void LaserMapping::Run() {
         "IEKF Solve and Update");
 
     // update local map
-    Timer::Evaluate([&, this]() { MapIncremental(); }, "    Incremental Mapping");
+    if (!localization_mode_en_) Timer::Evaluate([&, this]() { MapIncremental(); }, "    Incremental Mapping");
 
     // LOG(INFO) << "[ mapping ]: In num: " << scan_undistort_->points.size() << " downsamp " << cur_pts
     //           << " Map grid num: " << ivox_->NumValidGrids() << " effect num : " << effect_feat_num_;
@@ -328,14 +359,14 @@ void LaserMapping::Run() {
         if (pcd_save_en_) {
             PublishFrameWorld();
         }
-        if (path_save_en_) {
+        if (path_pub_en_) {
             PublishPath(pub_path_);
         }
     } else {
         if (pub_odom_aft_mapped_) {
             PublishOdometry(pub_odom_aft_mapped_);
         }
-        if (path_pub_en_ || path_save_en_) {
+        if (path_pub_en_) {
             PublishPath(pub_path_);
         }
         if (scan_pub_en_ || pcd_save_en_) {
@@ -359,7 +390,7 @@ void LaserMapping::StandardPCLCallBack(const sensor_msgs::PointCloud2::ConstPtr 
         [&, this]() {
             scan_count_++;
             if (msg->header.stamp.toSec() < last_timestamp_lidar_) {
-                LOG(ERROR) << "lidar loop back, clear buffer";
+                LOG(ERROR) << "Lidar loop back, clear buffer";
                 lidar_buffer_.clear();
             }
 
@@ -379,7 +410,7 @@ void LaserMapping::LivoxPCLCallBack(const livox_ros_driver2::CustomMsg::ConstPtr
         [&, this]() {
             scan_count_++;
             if (msg->header.stamp.toSec() < last_timestamp_lidar_) {
-                LOG(WARNING) << "lidar loop back, clear buffer";
+                LOG(WARNING) << "Lidar loop back, clear buffer";
                 lidar_buffer_.clear();
             }
 
@@ -420,7 +451,7 @@ void LaserMapping::IMUCallBack(const sensor_msgs::Imu::ConstPtr &msg_in) {
 
     mtx_buffer_.lock();
     if (timestamp < last_timestamp_imu_) {
-        LOG(WARNING) << "imu loop back, clear buffer";
+        LOG(WARNING) << "Imu loop back, clear buffer";
         imu_buffer_.clear();
     }
 
@@ -741,7 +772,7 @@ void LaserMapping::PublishFrameWorld() {
             std::string all_points_dir(std::string(std::string(ROOT_DIR) + "PCD/scans_") + std::to_string(pcd_index_) +
                                        std::string(".pcd"));
             pcl::PCDWriter pcd_writer;
-            LOG(INFO) << "current scan saved to /PCD/" << all_points_dir;
+            LOG(INFO) << "Current scan saved to /PCD/" << all_points_dir;
             pcd_writer.writeBinary(all_points_dir, *pcl_wait_save_);
             pcl_wait_save_->clear();
             scan_wait_num = 0;
@@ -850,10 +881,25 @@ void LaserMapping::Finish() {
         std::string file_name = std::string("scans.pcd");
         std::string all_points_dir(std::string(std::string(ROOT_DIR) + "PCD/") + file_name);
         pcl::PCDWriter pcd_writer;
-        LOG(INFO) << "current scan saved to /PCD/" << file_name;
+        LOG(INFO) << "Current scan saved to /PCD/" << file_name;
         pcd_writer.writeBinary(all_points_dir, *pcl_wait_save_);
     }
+    if (!localization_mode_en_ && prior_map_save_en_) {
+        PointVector map_points;
+        map_points.clear();
+        ivox_->GetMapPoints(map_points);
 
-    LOG(INFO) << "finish done";
+        CloudPtr pcl_map{new PointCloudType()};
+        pcl_map->points.clear();
+        for (size_t i = 0; i < map_points.size(); i++) pcl_map->points.emplace_back(map_points[i]);
+
+        std::string file_name = std::string("map_for_localization.pcd");
+        std::string all_points_dir(std::string(std::string(ROOT_DIR) + "PCD/") + file_name);
+        pcl::PCDWriter pcd_writer;
+        LOG(INFO) << "Ivox map saved to /PCD/" << file_name;
+        pcd_writer.writeBinary(all_points_dir, *pcl_map);
+    }
+
+    LOG(INFO) << "Finished";
 }
 }  // namespace faster_lio

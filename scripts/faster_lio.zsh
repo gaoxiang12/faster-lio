@@ -8,7 +8,7 @@ roslaunch livox_ros_driver2 msg_MID360.launch & sleep 1
 
 
 ############# LIO #############
-roslaunch faster_lio mapping_mid360.launch & sleep 1
+roslaunch faster_lio mapping_mid360.launch rviz:=true localization_mode:=true & sleep 1
 
 
 ############# EKF #############
@@ -25,6 +25,6 @@ rosrun mavros mavsys message_interval --id=30 --rate=200
 rosrun mavros mavsys message_interval --id=65 --rate=20
 # Ref: https://mavlink.io/en/messages/common.html
 
-roslaunch ekf_quat ekf_quat_lidar.launch
+roslaunch ekf_fuser ekf_fuser.launch
 
 wait

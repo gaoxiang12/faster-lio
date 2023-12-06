@@ -90,6 +90,9 @@ class IVox {
     /// get statistics of the points
     std::vector<float> StatGridPoints() const;
 
+    // get the points in the grid map
+    void GetMapPoints(PointVector& map_points);
+
    private:
     /// generate the nearby grids according to the given options
     void GenerateNearbyGrids();
@@ -206,6 +209,19 @@ bool IVox<dim, node_type, PointType>::GetClosestPoint(const PointType& pt, Point
 template <int dim, IVoxNodeType node_type, typename PointType>
 size_t IVox<dim, node_type, PointType>::NumValidGrids() const {
     return grids_map_.size();
+}
+
+template <int dim, IVoxNodeType node_type, typename PointType>
+void IVox<dim, node_type, PointType>::GetMapPoints(PointVector& map_points) {
+    for (auto& it : grids_cache_) {
+        std::vector<PointType> pts;
+        pts.clear();
+        it.second.GetAllPoints(pts);
+
+        for (int i = 0; i < pts.size(); i++) {
+            map_points.push_back(pts[i]);
+        }
+    }
 }
 
 template <int dim, IVoxNodeType node_type, typename PointType>

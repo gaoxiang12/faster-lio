@@ -54,6 +54,8 @@ class IVoxNode {
 
     inline PointT GetPoint(const std::size_t idx) const;
 
+    void GetAllPoints(std::vector<PointT>& pts);
+
     int KNNPointByCondition(std::vector<DistPoint>& dis_points, const PointT& point, const int& K,
                             const double& max_range);
 
@@ -83,6 +85,8 @@ class IVoxNodePhc {
     PointT GetPoint(const std::size_t idx) const;
 
     bool NNPoint(const PointT& cur_pt, DistPoint& dist_point) const;
+
+    void GetAllPoints(std::vector<PointT>& pts);
 
     int KNNPointByCondition(std::vector<DistPoint>& dis_points, const PointT& cur_pt, const int& K = 5,
                             const double& max_range = 5.0);
@@ -135,6 +139,16 @@ std::size_t IVoxNode<PointT, dim>::Size() const {
 template <typename PointT, int dim>
 PointT IVoxNode<PointT, dim>::GetPoint(const std::size_t idx) const {
     return points_[idx];
+}
+
+template <typename PointT, int dim>
+void IVoxNode<PointT, dim>::GetAllPoints(std::vector<PointT>& pts) {
+    pts.resize(points_.size());
+    int i = 0;
+    for (auto pt : points_) {
+        pts[i] = pt;
+        i++;
+    }
 }
 
 template <typename PointT, int dim>
@@ -293,6 +307,16 @@ std::size_t IVoxNodePhc<PointT, dim>::Size() const {
 template <typename PointT, int dim>
 PointT IVoxNodePhc<PointT, dim>::GetPoint(const std::size_t idx) const {
     return phc_cubes_[idx].GetPoint();
+}
+
+template <typename PointT, int dim>
+void IVoxNodePhc<PointT, dim>::GetAllPoints(std::vector<PointT>& pts) {
+    pts.resize(phc_cubes_.size());
+    int i = 0;
+    for (auto cube : phc_cubes_) {
+        pts[i] = cube.GetPoint();
+        i++;
+    }
 }
 
 template <typename PointT, int dim>

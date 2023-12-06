@@ -30,8 +30,3 @@
 *.exe
 *.out
 *.app
-
-build/
-*.pcd
-
-Log/

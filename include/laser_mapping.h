@@ -88,14 +88,12 @@ class LaserMapping {
     std::shared_ptr<ImuProcess> p_imu_ = nullptr;                 // imu process
 
     /// local map related
-    double cube_len_ = 0;
     double filter_size_map_min_ = 0;
     bool localmap_initialized_ = false;
 
     /// params
     std::vector<double> extrinT_{3, 0.0};  // lidar-imu translation
     std::vector<double> extrinR_{9, 0.0};  // lidar-imu rotation
-    std::string map_file_path_;
 
     /// point clouds data
     CloudPtr scan_undistort_{new PointCloudType()};   // scan after undistortion
@@ -110,8 +108,10 @@ class LaserMapping {
     common::VV4F plane_coef_;                         // plane coeffs
 
     /// ros pub and sub stuffs
+    ros::Timer localization_init_timer_;
     ros::Subscriber sub_pcl_;
     ros::Subscriber sub_imu_;
+    ros::Publisher pub_map_cloud_world_;
     ros::Publisher pub_laser_cloud_world_;
     ros::Publisher pub_laser_cloud_body_;
     ros::Publisher pub_laser_cloud_effect_world_;
@@ -127,6 +127,7 @@ class LaserMapping {
     nav_msgs::Odometry odom_aft_mapped_;
 
     /// options
+    bool localization_mode_en_ = false;
     bool time_sync_en_ = false;
     double timediff_lidar_wrt_imu_ = 0.0;
     double last_timestamp_lidar_ = 0;
@@ -162,9 +163,9 @@ class LaserMapping {
     bool scan_body_pub_en_ = false;
     bool scan_effect_pub_en_ = false;
     bool pcd_save_en_ = false;
+    bool prior_map_save_en_ = false;
     bool runtime_pos_log_ = true;
     int pcd_save_interval_ = -1;
-    bool path_save_en_ = false;
     std::string dataset_;
 
     PointCloudType::Ptr pcl_wait_save_{new PointCloudType()};  // debug save

@@ -28,15 +28,14 @@ publish:
   scan_bodyframe_pub_en: true     # true:  output the point cloud scans in IMU-body-frame
   scan_effect_pub_en: true        # true:  publish the pointscloud of effect point
 
-path_save_en: true
-
 pcd_save:
-  pcd_save_en: true
-  # how many LiDAR frames saved in each pcd file
+  # Dense scan for visualization or other downstream tasks
+  pcd_save_en: false
+  # How many LiDAR frames saved in each pcd file
   # -1: all frames will be saved in ONE pcd file, may lead to memory crash when having too much frames
   interval: -1
-
-runtime_pos_log_enable: true
+  # Sparse map for localization
+  prior_map_save_en: true
 
 feature_extract_enable: false
 point_filter_num: 3

@@ -12,7 +12,7 @@
 DEFINE_string(traj_log_file, std::string(ROOT_DIR) + "Log/traj.txt", "path to traj log file");
 void SigHandle(int sig) {
     faster_lio::options::FLAG_EXIT = true;
-    ROS_WARN("catch sig %d", sig);
+    ROS_WARN("Catch sig %d", sig);
 }
 
 int main(int argc, char **argv) {
@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
     google::ParseCommandLineFlags(&argc, &argv, true);
 
     ros::init(argc, argv, "faster_lio");
-    ros::NodeHandle nh;
+    ros::NodeHandle nh("~");
 
     auto laser_mapping = std::make_shared<faster_lio::LaserMapping>();
     laser_mapping->InitROS(nh);
@@ -40,11 +40,11 @@ int main(int argc, char **argv) {
         rate.sleep();
     }
 
-    LOG(INFO) << "finishing mapping";
+    LOG(INFO) << "Finishing mapping";
     laser_mapping->Finish();
 
     faster_lio::Timer::PrintAll();
-    LOG(INFO) << "save trajectory to: " << FLAGS_traj_log_file;
+    LOG(INFO) << "Save trajectory to: " << FLAGS_traj_log_file;
     laser_mapping->Savetrajectory(FLAGS_traj_log_file);
 
     return 0;

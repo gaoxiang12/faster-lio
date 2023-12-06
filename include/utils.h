@@ -59,6 +59,12 @@ class Timer {
         LOG(INFO) << ">>> ===== Printing run time end =====";
     }
 
+    static void ClearAll() {
+        for (auto& r : records_) {
+            r.second.time_usage_in_ms_.clear();
+        }
+    }
+
     /// dump to a log file
     static void DumpIntoFile(const std::string& file_name) {
         std::ofstream ofs(file_name, std::ios::out);

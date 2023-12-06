@@ -1,6 +1,8 @@
 <launch>
 <!-- Launch file for Livox MID-360 LiDAR -->
 	<arg name="rviz" default="true" />
+	<arg name="localization_mode" default="false" />
+	<param name="localization_mode_en" type="bool" value="$(arg localization_mode)"/>
 	<rosparam command="load" file="$(find faster_lio)/config/mid360.yaml" />
 
     <node pkg="faster_lio" type="run_mapping_online" name="laserMapping" output="screen" />

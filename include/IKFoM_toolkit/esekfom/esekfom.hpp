@@ -138,6 +138,11 @@ class esekf {
 #endif
     };
 
+    void set_icp_param(int minimum_converge_, int maximum_iter_){
+        minimum_converge = minimum_converge_;
+        maximum_iter = maximum_iter_;
+    }
+
     // receive system-specific models and their differentions.
     // for measurement as a manifold.
     void init(processModel f_in, processMatrix1 f_x_in, processMatrix2 f_w_in, measurementModel h_in,
@@ -488,7 +493,7 @@ class esekf {
 
             if (converg) t++;
 
-            if (t > 1 || i == maximum_iter - 1) {
+            if (t > minimum_converge || i == maximum_iter - 1) {
                 L_ = P_;
 
                 Matrix<scalar_type, 3, 3> res_temp_SO3;
@@ -683,7 +688,7 @@ class esekf {
 
             if (_share.converge) t++;
 
-            if (t > 1 || i == maximum_iter - 1) {
+            if (t > minimum_converge || i == maximum_iter - 1) {
                 L_ = P_;
 
                 Matrix<scalar_type, 3, 3> res_temp_SO3;
@@ -868,7 +873,7 @@ class esekf {
                 }
             }
             if (converg) t++;
-            if (t > 1 || i == maximum_iter - 1) {
+            if (t > minimum_converge || i == maximum_iter - 1) {
                 L_ = P_;
                 std::cout << "iteration time:" << t << "," << i << std::endl;
 
@@ -1061,7 +1066,7 @@ class esekf {
                 }
             }
             if (dyn_share.converge) t++;
-            if (t > 1 || i == maximum_iter - 1) {
+            if (t > minimum_converge || i == maximum_iter - 1) {
                 L_ = P_;
                 std::cout << "iteration time:" << t << "," << i << std::endl;
 
@@ -1253,7 +1258,7 @@ class esekf {
                 }
             }
             if (converg) t++;
-            if (t > 1 || i == maximum_iter - 1) {
+            if (t > minimum_converge || i == maximum_iter - 1) {
                 L_ = P_;
                 std::cout << "iteration time:" << t << "," << i << std::endl;
 
@@ -1448,7 +1453,7 @@ class esekf {
                 }
             }
             if (dyn_share.converge) t++;
-            if (t > 1 || i == maximum_iter - 1) {
+            if (t > minimum_converge || i == maximum_iter - 1) {
                 L_ = P_;
                 std::cout << "iteration time:" << t << "," << i << std::endl;
 
@@ -1732,7 +1737,7 @@ class esekf {
                 dyn_share.converge = true;
             }
 
-            if (t > 1 || i == maximum_iter - 1) {
+            if (t > minimum_converge || i == maximum_iter - 1) {
                 L_ = P_;
                 // std::cout << "iteration time" << t << "," << i << std::endl;
                 Matrix<scalar_type, 3, 3> res_temp_SO3;
@@ -1873,6 +1878,7 @@ class esekf {
     measurementModel_share *h_share;
     measurementModel_dyn_share h_dyn_share;
 
+    int minimum_converge = 1;
     int maximum_iter = 0;
     scalar_type limit[n];
 

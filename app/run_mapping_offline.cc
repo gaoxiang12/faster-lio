@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
 
     auto laser_mapping = std::make_shared<faster_lio::LaserMapping>();
     if (!laser_mapping->InitWithoutROS(FLAGS_config_file)) {
-        LOG(ERROR) << "laser mapping init failed.";
+        LOG(ERROR) << "Laser mapping init failed.";
         return -1;
     }
 
@@ -81,14 +81,14 @@ int main(int argc, char **argv) {
         }
     }
 
-    LOG(INFO) << "finishing mapping";
+    LOG(INFO) << "Finishing mapping";
     laser_mapping->Finish();
 
     /// print the fps
     double fps = 1.0 / (faster_lio::Timer::GetMeanTime("Laser Mapping Single Run") / 1000.);
     LOG(INFO) << "Faster LIO average FPS: " << fps;
 
-    LOG(INFO) << "save trajectory to: " << FLAGS_traj_log_file;
+    LOG(INFO) << "Save trajectory to: " << FLAGS_traj_log_file;
     laser_mapping->Savetrajectory(FLAGS_traj_log_file);
 
     faster_lio::Timer::PrintAll();
