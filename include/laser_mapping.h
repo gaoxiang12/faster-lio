@@ -127,6 +127,11 @@ class LaserMapping {
     std::deque<sensor_msgs::Imu::ConstPtr> imu_buffer_;
     nav_msgs::Odometry odom_aft_mapped_;
 
+    // 88 variables
+    std::string slam_map_frame = "";
+    std::string base_frame = "";
+    ros::Publisher pose_publisher;
+
     /// options
     bool time_sync_en_ = false;
     double timediff_lidar_wrt_imu_ = 0.0;
