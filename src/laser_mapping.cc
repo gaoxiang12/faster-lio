@@ -671,7 +671,7 @@ void LaserMapping::ObsModel(state_ikfom &s, esekfom::dyn_share_datastruct<double
 
 void LaserMapping::PublishPath(const ros::Publisher pub_path) {
     SetPosestamp(msg_body_pose_);
-    msg_body_pose_.header.stamp = ros::Time().fromSec(lidar_end_time_);
+    msg_body_pose_.header.stamp = ros::Time::now();// ros::Time().fromSec(lidar_end_time_);
     msg_body_pose_.header.frame_id = slam_map_frame;
     pose_publisher.publish(msg_body_pose_);
 
@@ -685,7 +685,7 @@ void LaserMapping::PublishPath(const ros::Publisher pub_path) {
 void LaserMapping::PublishOdometry(const ros::Publisher &pub_odom_aft_mapped) {
     odom_aft_mapped_.header.frame_id = slam_map_frame;
     odom_aft_mapped_.child_frame_id = base_frame;
-    odom_aft_mapped_.header.stamp = ros::Time().fromSec(lidar_end_time_);  // ros::Time().fromSec(lidar_end_time_);
+    odom_aft_mapped_.header.stamp = ros::Time::now(); // ros::Time().fromSec(lidar_end_time_);  // ros::Time().fromSec(lidar_end_time_);
     SetPosestamp(odom_aft_mapped_.pose);
     pub_odom_aft_mapped.publish(odom_aft_mapped_);
     auto P = kf_.get_P();
@@ -732,7 +732,7 @@ void LaserMapping::PublishFrameWorld() {
     if (run_in_offline_ == false && scan_pub_en_) {
         sensor_msgs::PointCloud2 laserCloudmsg;
         pcl::toROSMsg(*laserCloudWorld, laserCloudmsg);
-        laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time_);
+        laserCloudmsg.header.stamp = ros::Time::now();// ros::Time().fromSec(lidar_end_time_);
         laserCloudmsg.header.frame_id = slam_map_frame;
         pub_laser_cloud_world_.publish(laserCloudmsg);
         publish_count_ -= options::PUBFRAME_PERIOD;
@@ -769,7 +769,7 @@ void LaserMapping::PublishFrameBody(const ros::Publisher &pub_laser_cloud_body) 
 
     sensor_msgs::PointCloud2 laserCloudmsg;
     pcl::toROSMsg(*laser_cloud_imu_body, laserCloudmsg);
-    laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time_);
+    laserCloudmsg.header.stamp = ros::Time::now();// ros::Time().fromSec(lidar_end_time_);
     laserCloudmsg.header.frame_id = base_frame;
     pub_laser_cloud_body.publish(laserCloudmsg);
     publish_count_ -= options::PUBFRAME_PERIOD;
@@ -784,7 +784,7 @@ void LaserMapping::PublishFrameEffectWorld(const ros::Publisher &pub_laser_cloud
     }
     sensor_msgs::PointCloud2 laserCloudmsg;
     pcl::toROSMsg(*laser_cloud, laserCloudmsg);
-    laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time_);
+    laserCloudmsg.header.stamp = ros::Time::now();// ros::Time().fromSec(lidar_end_time_);
     laserCloudmsg.header.frame_id = slam_map_frame;
     pub_laser_cloud_effect_world.publish(laserCloudmsg);
     publish_count_ -= options::PUBFRAME_PERIOD;
