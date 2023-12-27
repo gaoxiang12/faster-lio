@@ -1,7 +1,7 @@
 common:
   dataset: "nclt"
-  lid_topic: "points_raw"
-  imu_topic: "imu_raw"
+  lid_topic: "/velodyne_points"
+  imu_topic: "/mavros/imu/data"
   time_sync_en: false         # ONLY turn on when external time synchronization is really not possible
 
 preprocess:

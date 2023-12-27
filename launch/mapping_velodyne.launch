@@ -1,6 +1,10 @@
 <launch>
   <!-- Launch file for velodyne16 VLP-16 LiDAR -->
 
+    <arg name="slam_map_frame" default="slam_map"/>
+    <arg name="base_frame" default="base_link"/>
+    <arg name="slam_pose_topic" default="/decco/pose"/>
+
     <arg name="rviz" default="true" />
 
     <rosparam command="load" file="$(find faster_lio)/config/velodyne.yaml" />
@@ -12,7 +16,14 @@
     <param name="filter_size_map" type="double" value="0.5" />
     <param name="cube_side_length" type="double" value="1000" />
     <param name="runtime_pos_log_enable" type="bool" value="0" />
-    <node pkg="faster_lio" type="run_mapping_online" name="laserMapping" output="screen" /> 
+    
+    <node pkg="faster_lio" type="run_mapping_online" name="laserMapping" output="screen">
+      <param name="slam_map_frame" type="string" value="$(arg slam_map_frame)"/>
+      <param name="base_frame" type="string" value="$(arg base_frame)"/>
+      <param name="slam_pose_topic" type="string" value="$(arg slam_pose_topic)"/>
+      <param name="frame_id" type="string" value="base_link"/>
+    </node> 
+
 
     <group if="$(arg rviz)">
     <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find faster_lio)/rviz_cfg/loam_livox.rviz" />

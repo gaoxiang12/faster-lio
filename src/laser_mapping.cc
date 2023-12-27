@@ -243,7 +243,7 @@ void LaserMapping::SubAndPubToROS(ros::NodeHandle &nh) {
     // ROS subscribe initialization
     std::string lidar_topic, imu_topic;
     nh.param<std::string>("common/lid_topic", lidar_topic, "/livox/lidar");
-    nh.param<std::string>("imu_topic", imu_topic, "/livox/imu");
+    nh.param<std::string>("common/imu_topic", imu_topic, "/livox/imu");
 
     if (preprocess_->GetLidarType() == LidarType::AVIA) {
         sub_pcl_ = nh.subscribe<livox_ros_driver::CustomMsg>(
@@ -329,8 +329,8 @@ void LaserMapping::Run() {
     // update local map
     Timer::Evaluate([&, this]() { MapIncremental(); }, "    Incremental Mapping");
 
-    LOG(INFO) << "[ mapping ]: In num: " << scan_undistort_->points.size() << " downsamp " << cur_pts
-              << " Map grid num: " << ivox_->NumValidGrids() << " effect num : " << effect_feat_num_;
+    // LOG(INFO) << "[ mapping ]: In num: " << scan_undistort_->points.size() << " downsamp " << cur_pts
+    //           << " Map grid num: " << ivox_->NumValidGrids() << " effect num : " << effect_feat_num_;
 
     // publish or save map pcd
     if (run_in_offline_) {
