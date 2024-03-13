@@ -6,6 +6,7 @@
 #include <csignal>
 
 #include "laser_mapping.h"
+#include "ros/node_handle.h"
 
 /// run the lidar mapping in online mode
 
@@ -23,9 +24,10 @@ int main(int argc, char **argv) {
 
     ros::init(argc, argv, "faster_lio");
     ros::NodeHandle nh;
+    ros::NodeHandle pnh("~");
 
     auto laser_mapping = std::make_shared<faster_lio::LaserMapping>();
-    laser_mapping->InitROS(nh);
+    laser_mapping->InitROS(nh, pnh);
 
     signal(SIGINT, SigHandle);
     ros::Rate rate(5000);

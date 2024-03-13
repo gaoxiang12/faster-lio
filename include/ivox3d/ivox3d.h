@@ -67,6 +67,14 @@ class IVox {
     }
 
     /**
+    * clear eveything
+    */
+    inline void Reset(){
+        grids_cache_.clear();
+        grids_map_.clear();
+        nearby_grids_.clear();
+    }
+    /**
      * add points
      * @param points_to_add
      */

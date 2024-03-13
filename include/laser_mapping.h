@@ -13,7 +13,8 @@
 #include "ivox3d/ivox3d.h"
 #include "options.h"
 #include "pointcloud_preprocess.h"
-
+#include "ros/node_handle.h"
+#include <std_srvs/Empty.h>
 namespace faster_lio {
 
 class LaserMapping {
@@ -35,12 +36,15 @@ class LaserMapping {
     }
 
     /// init with ros
-    bool InitROS(ros::NodeHandle &nh);
+    bool InitROS(const ros::NodeHandle &nh, const ros::NodeHandle &pnh);
 
     /// init without ros
     bool InitWithoutROS(const std::string &config_yaml);
 
     void Run();
+    //services
+    bool startLIO(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
+    bool stopLIO(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
 
     // callbacks of lidar and imu
     void StandardPCLCallBack(const sensor_msgs::PointCloud2::ConstPtr &msg);
@@ -56,11 +60,12 @@ class LaserMapping {
     ////////////////////////////// debug save / show ////////////////////////////////////////////////////////////////
     void PublishPath(const ros::Publisher pub_path);
     void PublishOdometry(const ros::Publisher &pub_odom_aft_mapped);
+    void PublishKeypoints(const ros::Publisher &pub_odom_aft_mapped);
     void PublishFrameWorld();
     void PublishFrameBody(const ros::Publisher &pub_laser_cloud_body);
     void PublishFrameEffectWorld(const ros::Publisher &pub_laser_cloud_effect_world);
     void Savetrajectory(const std::string &traj_file);
-
+    void Reset();
     void Finish();
 
    private:
@@ -73,9 +78,9 @@ class LaserMapping {
 
     void MapIncremental();
 
-    void SubAndPubToROS(ros::NodeHandle &nh);
+    void SubAndPubToROS();
 
-    bool LoadParams(ros::NodeHandle &nh);
+    bool LoadParams();
     bool LoadParamsFromYAML(const std::string &yaml);
 
     void PrintState(const state_ikfom &s);
@@ -111,9 +116,12 @@ class LaserMapping {
     common::VV4F plane_coef_;                         // plane coeffs
 
     /// ros pub and sub stuffs
+    ros::NodeHandle nh_;
+    ros::NodeHandle pnh_;
     ros::Subscriber sub_pcl_;
     ros::Subscriber sub_imu_;
     ros::Publisher pub_laser_cloud_world_;
+    ros::Publisher keypoints_pub_;
     ros::Publisher pub_laser_cloud_body_;
     ros::Publisher pub_laser_cloud_effect_world_;
     ros::Publisher pub_odom_aft_mapped_;
@@ -171,6 +179,12 @@ class LaserMapping {
     PointCloudType::Ptr pcl_wait_save_{new PointCloudType()};  // debug save
     nav_msgs::Path path_;
     geometry_msgs::PoseStamped msg_body_pose_;
+    
+    //turn on anf off
+    bool lidar_odom_ = false;
+    std::string base_link_frame_;
+    std::string lidar_frame_;
+    std::string global_frame_;
 };
 
 }  // namespace faster_lio
