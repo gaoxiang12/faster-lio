@@ -5,11 +5,12 @@
 
 #include "laser_mapping.h"
 #include "ros/node_handle.h"
+#include "tf/transform_listener.h"
 #include "utils.h"
 
 namespace faster_lio {
 
-bool LaserMapping::InitROS(const ros::NodeHandle &nh, const ros::NodeHandle& pnh){
+bool LaserMapping::InitROS(const ros::NodeHandle &nh, const ros::NodeHandle &pnh) {
     nh_ = nh;
     pnh_ = pnh;
     LoadParams();
@@ -60,17 +61,17 @@ bool LaserMapping::LoadParams() {
     common::V3D lidar_T_wrt_IMU;
     common::M3D lidar_R_wrt_IMU;
 
-    pnh_.param<std::string>("base_link_frame",    base_link_frame_, "base_footprint_tug");
-    pnh_.param<std::string>("lidar_frame",  lidar_frame_,     "main_sensor_lidar");
-    pnh_.param<std::string>("global_frame", global_frame_,    "world");
+    pnh_.param<std::string>("base_link_frame", base_link_frame_, "base_footprint_tug");
+    pnh_.param<std::string>("lidar_frame", lidar_frame_, "main_sensor_lidar");
+    pnh_.param<std::string>("global_frame", global_frame_, "world");
     nh_.param<bool>("path_save_en", path_save_en_, true);
     nh_.param<bool>("publish/path_publish_en", path_pub_en_, true);
     nh_.param<bool>("publish/scan_publish_en", scan_pub_en_, true);
     nh_.param<bool>("publish/dense_publish_en", dense_pub_en_, false);
     nh_.param<bool>("publish/scan_bodyframe_pub_en", scan_body_pub_en_, true);
     nh_.param<bool>("publish/scan_effect_pub_en", scan_effect_pub_en_, false);
-    nh_.param<std::string>("publish/tf_imu_frame", tf_imu_frame_, "body");
-    nh_.param<std::string>("publish/tf_world_frame", tf_world_frame_, "camera_init");
+    // nh_.param<std::string>("publish/tf_imu_frame", tf_imu_frame_, "body");
+    // nh_.param<std::string>("publish/tf_world_frame", tf_world_frame_, "camera_init");
 
     nh_.param<int>("max_iteration", options::NUM_MAX_ITERATIONS, 4);
     nh_.param<float>("esti_plane_threshold", options::ESTI_PLANE_THRESHOLD, 0.1);
@@ -159,9 +160,9 @@ bool LaserMapping::LoadParamsFromYAML(const std::string &yaml_file) {
         dense_pub_en_ = yaml["publish"]["dense_publish_en"].as<bool>();
         scan_body_pub_en_ = yaml["publish"]["scan_bodyframe_pub_en"].as<bool>();
         scan_effect_pub_en_ = yaml["publish"]["scan_effect_pub_en"].as<bool>();
-        //TODO: think about this
-        tf_imu_frame_ = yaml["publish"]["tf_imu_frame"].as<std::string>("body");
-        tf_world_frame_ = yaml["publish"]["tf_world_frame"].as<std::string>(global_frame_);
+        // TODO: think about this
+        //  tf_imu_frame_ = yaml["publish"]["tf_imu_frame"].as<std::string>("body");
+        //  tf_world_frame_ = yaml["publish"]["tf_world_frame"].as<std::string>(global_frame_);
         path_save_en_ = yaml["path_save_en"].as<bool>();
 
         options::NUM_MAX_ITERATIONS = yaml["max_iteration"].as<int>();
@@ -244,22 +245,25 @@ void LaserMapping::SubAndPubToROS() {
     nh_.param<std::string>("common/lid_topic", lidar_topic, "/livox/lidar");
     nh_.param<std::string>("common/imu_topic", imu_topic, "/livox/imu");
 
-        sub_pcl_ = nh_.subscribe<sensor_msgs::PointCloud2>(
-            lidar_topic, 200000, [this](const sensor_msgs::PointCloud2::ConstPtr &msg) { StandardPCLCallBack(msg); });
+    sub_pcl_ = nh_.subscribe<sensor_msgs::PointCloud2>(
+        lidar_topic, 200000, [this](const sensor_msgs::PointCloud2::ConstPtr &msg) { StandardPCLCallBack(msg); });
 
     sub_imu_ = nh_.subscribe<sensor_msgs::Imu>(imu_topic, 200000,
-                                              [this](const sensor_msgs::Imu::ConstPtr &msg) { IMUCallBack(msg); });
+                                               [this](const sensor_msgs::Imu::ConstPtr &msg) { IMUCallBack(msg); });
 
     // ROS publisher init
     path_.header.stamp = ros::Time::now();
     path_.header.frame_id = global_frame_;
 
     pub_laser_cloud_world_ = pnh_.advertise<sensor_msgs::PointCloud2>("/cloud_registered", 100000);
-    keypoints_pub_ = pnh_.advertise<sensor_msgs::PointCloud2>("/keypoints", 100000);
+    keypoints_pub_ = pnh_.advertise<sensor_msgs::PointCloud2>("keypoints", 100);
     pub_laser_cloud_body_ = pnh_.advertise<sensor_msgs::PointCloud2>("/cloud_registered_body", 100000);
     pub_laser_cloud_effect_world_ = pnh_.advertise<sensor_msgs::PointCloud2>("/cloud_registered_effect_world", 100000);
-    pub_odom_aft_mapped_ = pnh_.advertise<nav_msgs::Odometry>("/odometry", 100000);
-    pub_path_ = pnh_.advertise<nav_msgs::Path>("/path", 100000);
+    pub_odom_aft_mapped_ = pnh_.advertise<nav_msgs::Odometry>("odometry", 100);
+    pub_path_ = pnh_.advertise<nav_msgs::Path>("trajectory", 100);
+
+    start_lio_service_ = pnh_.advertiseService("start_lidar_odom", &LaserMapping::startLIO, this);
+    stop_lio_service_ = pnh_.advertiseService("stop_lidar_odom", &LaserMapping::stopLIO, this);
 }
 
 LaserMapping::LaserMapping() {
@@ -274,25 +278,20 @@ bool LaserMapping::startLIO(std_srvs::Empty::Request &req, std_srvs::Empty::Resp
 }
 
 bool LaserMapping::stopLIO(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res) {
-    // TODO: clean everything
-    // mutex_.lock();
-    // odometry_.Reset();
-    // path_msg_.poses.clear();
-    // mutex_.unlock();
     lidar_odom_ = false;
     return true;
 }
-void LaserMapping::Reset(){
-  //cleared map
-  ivox_->Reset();
-  flg_first_scan_ = true;
-  path_.poses.clear(); 
-  p_imu_->Reset();
-  pcl_wait_save_->clear();
-  lidar_buffer_.clear();
-  time_buffer_.clear();
-  time_buffer_.clear();
-  lidar_pushed_ = false;
+void LaserMapping::Reset() {
+    // cleared map
+    ivox_->Reset();
+    flg_first_scan_ = true;
+    path_.poses.clear();
+    p_imu_->Reset();
+    pcl_wait_save_->clear();
+    lidar_buffer_.clear();
+    time_buffer_.clear();
+    time_buffer_.clear();
+    lidar_pushed_ = false;
 }
 
 void LaserMapping::Run() {
@@ -361,10 +360,12 @@ void LaserMapping::Run() {
     // update local map
     Timer::Evaluate([&, this]() { MapIncremental(); }, "    Incremental Mapping");
 
-    LOG(INFO) << "[ mapping ]: In num: " << scan_undistort_->points.size() << " downsamp " << cur_pts
-              << " Map grid num: " << ivox_->NumValidGrids() << " effect num : " << effect_feat_num_;
+    // LOG(INFO) << "[ mapping ]: In num: " << scan_undistort_->points.size() << " downsamp " << cur_pts
+    // << " Map grid num: " << ivox_->NumValidGrids() << " effect num : " << effect_feat_num_;
 
     // publish or save map pcd
+    PublishKeypoints(keypoints_pub_);
+    PublishPath(pub_path_);
     if (run_in_offline_) {
         if (pcd_save_en_) {
             PublishFrameWorld();
@@ -713,18 +714,17 @@ void LaserMapping::PublishPath(const ros::Publisher pub_path) {
     }
 }
 
-void LaserMapping::PublishKeypoints(const ros::Publisher & pubLaserCloudFull)
-{
-   // ROS_INFO("Internally the keypoints size is %zu", feats_down_body->size());
-   sensor_msgs::PointCloud2 laserCloudmsg;
-   pcl::toROSMsg(*scan_down_body_, laserCloudmsg);
-   laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time_);
-   laserCloudmsg.header.frame_id = base_link_frame_;
-   pubLaserCloudFull.publish(laserCloudmsg);
+void LaserMapping::PublishKeypoints(const ros::Publisher &pubLaserCloudFull) {
+    // ROS_INFO("Internally the keypoints size is %zu", feats_down_body->size());
+    sensor_msgs::PointCloud2 laserCloudmsg;
+    pcl::toROSMsg(*scan_down_body_, laserCloudmsg);
+    laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time_);
+    laserCloudmsg.header.frame_id = base_link_frame_;
+    pubLaserCloudFull.publish(laserCloudmsg);
 }
 void LaserMapping::PublishOdometry(const ros::Publisher &pub_odom_aft_mapped) {
-    //TODO: change this
-    
+    // TODO: change this
+
     static tf::TransformBroadcaster br;
     if (!lidar_odom_) {
         // Broadcast the tf
@@ -756,7 +756,7 @@ void LaserMapping::PublishOdometry(const ros::Publisher &pub_odom_aft_mapped) {
         return;
     }
     odom_aft_mapped_.header.frame_id = global_frame_;
-    //TODO: think about this
+    // TODO: think about this
     odom_aft_mapped_.child_frame_id = base_link_frame_;
     odom_aft_mapped_.header.stamp = ros::Time().fromSec(lidar_end_time_);
     SetPosestamp(odom_aft_mapped_.pose);
@@ -781,7 +781,18 @@ void LaserMapping::PublishOdometry(const ros::Publisher &pub_odom_aft_mapped) {
     q.setY(odom_aft_mapped_.pose.pose.orientation.y);
     q.setZ(odom_aft_mapped_.pose.pose.orientation.z);
     transform.setRotation(q);
-    br.sendTransform(tf::StampedTransform(transform, odom_aft_mapped_.header.stamp, tf_world_frame_, tf_imu_frame_));
+
+    tf::StampedTransform sensor2tug;
+    try {
+        tf_listener_.waitForTransform(lidar_frame_, base_link_frame_, ros::Time(0), ros::Duration(3.0));
+        tf_listener_.lookupTransform(lidar_frame_, base_link_frame_, ros::Time(0), sensor2tug);
+
+        tf::Transform odom2tug = transform * sensor2tug;
+        br.sendTransform(
+            tf::StampedTransform(odom2tug, ros::Time().fromSec(lidar_end_time_), global_frame_, base_link_frame_));
+    } catch (tf::TransformException ex) {
+        ROS_ERROR("%s", ex.what());
+    }
 }
 
 void LaserMapping::PublishFrameWorld() {
@@ -805,14 +816,14 @@ void LaserMapping::PublishFrameWorld() {
         sensor_msgs::PointCloud2 laserCloudmsg;
         pcl::toROSMsg(*laserCloudWorld, laserCloudmsg);
         laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time_);
-        laserCloudmsg.header.frame_id = "camera_init";
+        laserCloudmsg.header.frame_id = global_frame_;
         pub_laser_cloud_world_.publish(laserCloudmsg);
         publish_count_ -= options::PUBFRAME_PERIOD;
     }
 
     /**************** save map ****************/
-    /* 1. make sure you have enough memories
-    /* 2. noted that pcd save will influence the real-time performences **/
+    // 1. make sure you have enough memories
+    // 2. noted that pcd save will influence the real-time performences
     if (pcd_save_en_) {
         *pcl_wait_save_ += *laserCloudWorld;
 
@@ -842,7 +853,7 @@ void LaserMapping::PublishFrameBody(const ros::Publisher &pub_laser_cloud_body) 
     sensor_msgs::PointCloud2 laserCloudmsg;
     pcl::toROSMsg(*laser_cloud_imu_body, laserCloudmsg);
     laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time_);
-    laserCloudmsg.header.frame_id = "body";
+    laserCloudmsg.header.frame_id = base_link_frame_;
     pub_laser_cloud_body.publish(laserCloudmsg);
     publish_count_ -= options::PUBFRAME_PERIOD;
 }
@@ -857,7 +868,7 @@ void LaserMapping::PublishFrameEffectWorld(const ros::Publisher &pub_laser_cloud
     sensor_msgs::PointCloud2 laserCloudmsg;
     pcl::toROSMsg(*laser_cloud, laserCloudmsg);
     laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time_);
-    laserCloudmsg.header.frame_id = "camera_init";
+    laserCloudmsg.header.frame_id = global_frame_;
     pub_laser_cloud_effect_world.publish(laserCloudmsg);
     publish_count_ -= options::PUBFRAME_PERIOD;
 }

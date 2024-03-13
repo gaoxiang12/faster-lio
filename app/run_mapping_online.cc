@@ -6,11 +6,12 @@
 #include <csignal>
 
 #include "laser_mapping.h"
+#include "ros/init.h"
 #include "ros/node_handle.h"
 
 /// run the lidar mapping in online mode
 
-DEFINE_string(traj_log_file, "./Log/traj.txt", "path to traj log file");
+// DEFINE_string(traj_log_file, "./Log/traj.txt", "path to traj log file");
 void SigHandle(int sig) {
     faster_lio::options::FLAG_EXIT = true;
     ROS_WARN("catch sig %d", sig);
@@ -30,7 +31,9 @@ int main(int argc, char **argv) {
     laser_mapping->InitROS(nh, pnh);
 
     signal(SIGINT, SigHandle);
-    ros::Rate rate(5000);
+    ros::Rate rate(100);
+
+    // ros::spin();
 
     // online, almost same with offline, just receive the messages from ros
     while (ros::ok()) {
@@ -45,9 +48,9 @@ int main(int argc, char **argv) {
     LOG(INFO) << "finishing mapping";
     laser_mapping->Finish();
 
-    faster_lio::Timer::PrintAll();
-    LOG(INFO) << "save trajectory to: " << FLAGS_traj_log_file;
-    laser_mapping->Savetrajectory(FLAGS_traj_log_file);
+    // faster_lio::Timer::PrintAll();
+    // LOG(INFO) << "save trajectory to: " << FLAGS_traj_log_file;
+    // laser_mapping->Savetrajectory(FLAGS_traj_log_file);
 
     return 0;
 }

@@ -9,12 +9,13 @@
 #include <condition_variable>
 #include <thread>
 
+#include <std_srvs/Empty.h>
 #include "imu_processing.hpp"
 #include "ivox3d/ivox3d.h"
 #include "options.h"
 #include "pointcloud_preprocess.h"
 #include "ros/node_handle.h"
-#include <std_srvs/Empty.h>
+#include "tf/transform_listener.h"
 namespace faster_lio {
 
 class LaserMapping {
@@ -42,7 +43,7 @@ class LaserMapping {
     bool InitWithoutROS(const std::string &config_yaml);
 
     void Run();
-    //services
+    // services
     bool startLIO(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
     bool stopLIO(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
 
@@ -126,8 +127,11 @@ class LaserMapping {
     ros::Publisher pub_laser_cloud_effect_world_;
     ros::Publisher pub_odom_aft_mapped_;
     ros::Publisher pub_path_;
-    std::string tf_imu_frame_;
-    std::string tf_world_frame_;
+    ros::ServiceServer start_lio_service_;
+    ros::ServiceServer stop_lio_service_;
+    // std::string tf_imu_frame_;
+    // std::string tf_world_frame_;
+    tf::TransformListener tf_listener_;
 
     std::mutex mtx_buffer_;
     std::deque<double> time_buffer_;
@@ -179,9 +183,9 @@ class LaserMapping {
     PointCloudType::Ptr pcl_wait_save_{new PointCloudType()};  // debug save
     nav_msgs::Path path_;
     geometry_msgs::PoseStamped msg_body_pose_;
-    
-    //turn on anf off
-    bool lidar_odom_ = false;
+
+    // turn on anf off
+    bool lidar_odom_ = true;
     std::string base_link_frame_;
     std::string lidar_frame_;
     std::string global_frame_;
