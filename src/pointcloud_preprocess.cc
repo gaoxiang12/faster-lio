@@ -59,12 +59,10 @@ void PointCloudPreprocess::AviaHandler(const livox_ros_driver::CustomMsg::ConstP
                     msg->points[i].offset_time /
                     float(1000000);  // use curvature as time of each laser points, curvature unit: ms
 
-                if ((abs(cloud_full_[i].x - cloud_full_[i - 1].x) > 1e-7) ||
-                    (abs(cloud_full_[i].y - cloud_full_[i - 1].y) > 1e-7) ||
-                    (abs(cloud_full_[i].z - cloud_full_[i - 1].z) > 1e-7) &&
-                        (cloud_full_[i].x * cloud_full_[i].x + cloud_full_[i].y * cloud_full_[i].y +
-                             cloud_full_[i].z * cloud_full_[i].z >
-                         (blind_ * blind_))) {
+                if (((abs(cloud_full_[i].x - cloud_full_[i - 1].x) > 1e-7) ||
+                     (abs(cloud_full_[i].y - cloud_full_[i - 1].y) > 1e-7) ||
+                     (abs(cloud_full_[i].z - cloud_full_[i - 1].z) > 1e-7)) &&
+                    (cloud_full_[i].x * cloud_full_[i].x + cloud_full_[i].y * cloud_full_[i].y + cloud_full_[i].z * cloud_full_[i].z > blind_ * blind_)) {
                     is_valid_pt[i] = true;
                 }
             }
