@@ -1,0 +1,21 @@
+<launch>
+<!-- Launch file for ouster OS2-64 LiDAR -->
+
+    <arg name="base_link_frame" default="base_footprint_tug" />
+    <arg name="lidar_frame" default="main_sensor_lidar" />
+    <arg name="global_frame" default="odom" />
+    <rosparam command="load" file="$(find faster_lio)/config/ouster64.yaml" />
+
+    <param name="feature_extract_enable" type="bool" value="0"/>
+    <param name="point_filter_num_" type="int" value="4"/>
+    <param name="max_iteration" type="int" value="3" />
+    <param name="filter_size_surf" type="double" value="0.5" />
+    <param name="filter_size_map" type="double" value="0.5" />
+    <param name="cube_side_length" type="double" value="1000" />
+    <param name="runtime_pos_log_enable" type="bool" value="0" />
+    <node pkg="faster_lio" type="run_mapping_online" name="lidar_odometry" output="screen"> 
+      <param name="base_link_frame" value="$(arg base_link_frame)" />
+      <param name="lidar_frame" value="$(arg lidar_frame)" />
+      <param name="global_frame" value="$(arg global_frame)" />
+    </node>
+</launch>
