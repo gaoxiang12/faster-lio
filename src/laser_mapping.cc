@@ -2,7 +2,9 @@
 #include <yaml-cpp/yaml.h>
 #include <execution>
 #include <fstream>
+#include <numeric>
 
+#include "common_lib.h"
 #include "laser_mapping.h"
 #include "ros/node_handle.h"
 #include "tf/transform_listener.h"
@@ -308,9 +310,20 @@ void LaserMapping::Run() {
 
     if (!lidar_odom_) {
         voxel_scan_.setInputCloud(scan_undistort_);
+        scan_down_body_->clear();
+        scan_down_world_->clear();
         voxel_scan_.filter(*scan_down_body_);
+
+        std::for_each(std::execution::unseq, scan_down_body_->begin(), scan_down_body_->end(), [&](const auto &point) {
+            /* transform to world frame */
+            // TODO: check if valid
+            scan_down_world_->push_back(PointBodyToWorld(point));
+        });
+
         PublishOdometry(pub_odom_aft_mapped_);
         PublishKeypoints(keypoints_pub_);
+        path_.poses.clear();
+        PublishPath(pub_path_);
         flg_first_scan_ = true;
         return;
     }
@@ -334,6 +347,7 @@ void LaserMapping::Run() {
 
     int cur_pts = scan_down_body_->size();
     if (cur_pts < 5) {
+        lidar_odom_ = false;
         LOG(WARNING) << "Too few points, skip this scan!" << scan_undistort_->size() << ", " << scan_down_body_->size();
         return;
     }
@@ -360,9 +374,6 @@ void LaserMapping::Run() {
     // update local map
     Timer::Evaluate([&, this]() { MapIncremental(); }, "    Incremental Mapping");
 
-    // LOG(INFO) << "[ mapping ]: In num: " << scan_undistort_->points.size() << " downsamp " << cur_pts
-    // << " Map grid num: " << ivox_->NumValidGrids() << " effect num : " << effect_feat_num_;
-
     // publish or save map pcd
     PublishKeypoints(keypoints_pub_);
     PublishPath(pub_path_);
@@ -386,11 +397,7 @@ void LaserMapping::Run() {
         if (scan_pub_en_ && scan_body_pub_en_) {
             PublishFrameBody(pub_laser_cloud_body_);
         }
-        if (scan_pub_en_ && scan_effect_pub_en_) {
-            PublishFrameEffectWorld(pub_laser_cloud_effect_world_);
-        }
     }
-
     // Debug variables
     frame_num_++;
 }
@@ -531,13 +538,11 @@ void LaserMapping::MapIncremental() {
     point_no_need_downsample.reserve(cur_pts);
 
     std::vector<size_t> index(cur_pts);
-    for (size_t i = 0; i < cur_pts; ++i) {
-        index[i] = i;
-    }
+    std::iota(index.begin(), index.end(), 0.0);
 
     std::for_each(std::execution::unseq, index.begin(), index.end(), [&](const size_t &i) {
         /* transform to world frame */
-        PointBodyToWorld(&(scan_down_body_->points[i]), &(scan_down_world_->points[i]));
+        scan_down_world_->points[i] = PointBodyToWorld(scan_down_body_->points[i]);
 
         /* decide if need add to map */
         PointType &point_world = scan_down_world_->points[i];
@@ -717,9 +722,9 @@ void LaserMapping::PublishPath(const ros::Publisher pub_path) {
 void LaserMapping::PublishKeypoints(const ros::Publisher &pubLaserCloudFull) {
     // ROS_INFO("Internally the keypoints size is %zu", feats_down_body->size());
     sensor_msgs::PointCloud2 laserCloudmsg;
-    pcl::toROSMsg(*scan_down_body_, laserCloudmsg);
+    pcl::toROSMsg(*scan_down_world_, laserCloudmsg);
     laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time_);
-    laserCloudmsg.header.frame_id = base_link_frame_;
+    laserCloudmsg.header.frame_id = global_frame_;
     pubLaserCloudFull.publish(laserCloudmsg);
 }
 void LaserMapping::PublishOdometry(const ros::Publisher &pub_odom_aft_mapped) {
@@ -806,7 +811,7 @@ void LaserMapping::PublishFrameWorld() {
         int size = laserCloudFullRes->points.size();
         laserCloudWorld.reset(new PointCloudType(size, 1));
         for (int i = 0; i < size; i++) {
-            PointBodyToWorld(&laserCloudFullRes->points[i], &laserCloudWorld->points[i]);
+            laserCloudWorld->points[i] = PointBodyToWorld(laserCloudFullRes->points[i]);
         }
     } else {
         laserCloudWorld = scan_down_world_;
@@ -858,21 +863,6 @@ void LaserMapping::PublishFrameBody(const ros::Publisher &pub_laser_cloud_body) 
     publish_count_ -= options::PUBFRAME_PERIOD;
 }
 
-void LaserMapping::PublishFrameEffectWorld(const ros::Publisher &pub_laser_cloud_effect_world) {
-    int size = corr_pts_.size();
-    PointCloudType::Ptr laser_cloud(new PointCloudType(size, 1));
-
-    for (int i = 0; i < size; i++) {
-        PointBodyToWorld(corr_pts_[i].head<3>(), &laser_cloud->points[i]);
-    }
-    sensor_msgs::PointCloud2 laserCloudmsg;
-    pcl::toROSMsg(*laser_cloud, laserCloudmsg);
-    laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time_);
-    laserCloudmsg.header.frame_id = global_frame_;
-    pub_laser_cloud_effect_world.publish(laserCloudmsg);
-    publish_count_ -= options::PUBFRAME_PERIOD;
-}
-
 void LaserMapping::Savetrajectory(const std::string &traj_file) {
     std::ofstream ofs;
     ofs.open(traj_file, std::ios::out);
@@ -903,26 +893,16 @@ void LaserMapping::SetPosestamp(T &out) {
     out.pose.orientation.w = state_point_.rot.coeffs()[3];
 }
 
-void LaserMapping::PointBodyToWorld(const PointType *pi, PointType *const po) {
-    common::V3D p_body(pi->x, pi->y, pi->z);
+PointType LaserMapping::PointBodyToWorld(const PointType &pi) {
+    common::V3D p_body(pi.x, pi.y, pi.z);
     common::V3D p_global(state_point_.rot * (state_point_.offset_R_L_I * p_body + state_point_.offset_T_L_I) +
                          state_point_.pos);
-
-    po->x = p_global(0);
-    po->y = p_global(1);
-    po->z = p_global(2);
-    po->intensity = pi->intensity;
-}
-
-void LaserMapping::PointBodyToWorld(const common::V3F &pi, PointType *const po) {
-    common::V3D p_body(pi.x(), pi.y(), pi.z());
-    common::V3D p_global(state_point_.rot * (state_point_.offset_R_L_I * p_body + state_point_.offset_T_L_I) +
-                         state_point_.pos);
-
-    po->x = p_global(0);
-    po->y = p_global(1);
-    po->z = p_global(2);
-    po->intensity = std::abs(po->z);
+    PointType po;
+    po.x = p_global(0);
+    po.y = p_global(1);
+    po.z = p_global(2);
+    po.intensity = pi.intensity;
+    return po;
 }
 
 void LaserMapping::PointBodyLidarToIMU(PointType const *const pi, PointType *const po) {

@@ -10,6 +10,7 @@
 #include <thread>
 
 #include <std_srvs/Empty.h>
+#include "common_lib.h"
 #include "imu_processing.hpp"
 #include "ivox3d/ivox3d.h"
 #include "options.h"
@@ -74,6 +75,7 @@ class LaserMapping {
     void SetPosestamp(T &out);
 
     void PointBodyToWorld(PointType const *pi, PointType *const po);
+    PointType PointBodyToWorld(PointType const &pi);
     void PointBodyToWorld(const common::V3F &pi, PointType *const po);
     void PointBodyLidarToIMU(PointType const *const pi, PointType *const po);
 
