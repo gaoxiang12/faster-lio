@@ -314,11 +314,11 @@ void LaserMapping::Run() {
         scan_down_world_->clear();
         voxel_scan_.filter(*scan_down_body_);
 
-        std::for_each(std::execution::unseq, scan_down_body_->begin(), scan_down_body_->end(), [&](const auto &point) {
-            /* transform to world frame */
-            // TODO: check if valid
-            scan_down_world_->push_back(PointBodyToWorld(point));
-        });
+        // std::for_each(std::execution::unseq, scan_down_body_->begin(), scan_down_body_->end(), [&](const auto &point) {
+            // [> transform to world frame <]
+            // // TODO: check if valid
+            // scan_down_world_->push_back(PointBodyToWorld(point));
+        // });
 
         PublishOdometry(pub_odom_aft_mapped_);
         PublishKeypoints(keypoints_pub_);
@@ -598,14 +598,15 @@ void LaserMapping::ObsModel(state_ikfom &s, esekfom::dyn_share_datastruct<double
     int cnt_pts = scan_down_body_->size();
 
     std::vector<size_t> index(cnt_pts);
-    for (size_t i = 0; i < index.size(); ++i) {
-        index[i] = i;
-    }
+    std::iota(index.begin(), index.end(), 0);
+    // for (size_t i = 0; i < index.size(); ++i) {
+        // index[i] = i;
+    // }
 
     Timer::Evaluate(
         [&, this]() {
-            auto R_wl = (s.rot * s.offset_R_L_I).cast<float>();
-            auto t_wl = (s.rot * s.offset_T_L_I + s.pos).cast<float>();
+            auto R_wl = static_cast<float>(s.rot * s.offset_R_L_I);
+            auto t_wl = static_cast<float>(s.rot * s.offset_T_L_I + s.pos);
 
             /** closest surface search and residual computation **/
             std::for_each(std::execution::par_unseq, index.begin(), index.end(), [&](const size_t &i) {
@@ -616,7 +617,9 @@ void LaserMapping::ObsModel(state_ikfom &s, esekfom::dyn_share_datastruct<double
                 common::V3F p_body = point_body.getVector3fMap();
                 point_world.getVector3fMap() = R_wl * p_body + t_wl;
                 point_world.intensity = point_body.intensity;
-
+                
+                //TODO: this is parellel transform
+                
                 auto &points_near = nearest_points_[i];
                 if (ekfom_data.converge) {
                     /** Find the closest surfaces in the map **/
