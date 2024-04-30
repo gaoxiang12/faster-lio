@@ -83,7 +83,6 @@ class PointCloudPreprocess {
     void SetLidarType(LidarType lt) { lidar_type_ = lt; }
 
    private:
-    void AviaHandler(const livox_ros_driver::CustomMsg::ConstPtr &msg);
     void Oust64Handler(const sensor_msgs::PointCloud2::ConstPtr &msg);
     void VelodyneHandler(const sensor_msgs::PointCloud2::ConstPtr &msg);
 

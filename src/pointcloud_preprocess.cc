@@ -1,7 +1,6 @@
 #include "pointcloud_preprocess.h"
 
 #include <glog/logging.h>
-#include <execution>
 
 namespace faster_lio {
 
@@ -9,11 +8,6 @@ void PointCloudPreprocess::Set(LidarType lid_type, double bld, int pfilt_num) {
     lidar_type_ = lid_type;
     blind_ = bld;
     point_filter_num_ = pfilt_num;
-}
-
-void PointCloudPreprocess::Process(const livox_ros_driver::CustomMsg::ConstPtr &msg, PointCloudType::Ptr &pcl_out) {
-    AviaHandler(msg);
-    *pcl_out = cloud_out_;
 }
 
 void PointCloudPreprocess::Process(const sensor_msgs::PointCloud2::ConstPtr &msg, PointCloudType::Ptr &pcl_out) {
@@ -33,50 +27,6 @@ void PointCloudPreprocess::Process(const sensor_msgs::PointCloud2::ConstPtr &msg
     *pcl_out = cloud_out_;
 }
 
-void PointCloudPreprocess::AviaHandler(const livox_ros_driver::CustomMsg::ConstPtr &msg) {
-    cloud_out_.clear();
-    cloud_full_.clear();
-    int plsize = msg->point_num;
-
-    cloud_out_.reserve(plsize);
-    cloud_full_.resize(plsize);
-
-    std::vector<bool> is_valid_pt(plsize, false);
-    std::vector<uint> index(plsize - 1);
-    for (uint i = 0; i < plsize - 1; ++i) {
-        index[i] = i + 1;  // 从1开始
-    }
-
-    std::for_each(std::execution::par_unseq, index.begin(), index.end(), [&](const uint &i) {
-        if ((msg->points[i].line < num_scans_) &&
-            ((msg->points[i].tag & 0x30) == 0x10 || (msg->points[i].tag & 0x30) == 0x00)) {
-            if (i % point_filter_num_ == 0) {
-                cloud_full_[i].x = msg->points[i].x;
-                cloud_full_[i].y = msg->points[i].y;
-                cloud_full_[i].z = msg->points[i].z;
-                cloud_full_[i].intensity = msg->points[i].reflectivity;
-                cloud_full_[i].curvature =
-                    msg->points[i].offset_time /
-                    float(1000000);  // use curvature as time of each laser points, curvature unit: ms
-
-                if ((abs(cloud_full_[i].x - cloud_full_[i - 1].x) > 1e-7) ||
-                    (abs(cloud_full_[i].y - cloud_full_[i - 1].y) > 1e-7) ||
-                    (abs(cloud_full_[i].z - cloud_full_[i - 1].z) > 1e-7) &&
-                        (cloud_full_[i].x * cloud_full_[i].x + cloud_full_[i].y * cloud_full_[i].y +
-                             cloud_full_[i].z * cloud_full_[i].z >
-                         (blind_ * blind_))) {
-                    is_valid_pt[i] = true;
-                }
-            }
-        }
-    });
-
-    for (uint i = 1; i < plsize; i++) {
-        if (is_valid_pt[i]) {
-            cloud_out_.points.push_back(cloud_full_[i]);
-        }
-    }
-}
 
 void PointCloudPreprocess::Oust64Handler(const sensor_msgs::PointCloud2::ConstPtr &msg) {
     cloud_out_.clear();
