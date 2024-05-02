@@ -314,10 +314,11 @@ void LaserMapping::Run() {
         scan_down_world_->clear();
         voxel_scan_.filter(*scan_down_body_);
 
-        // std::for_each(std::execution::unseq, scan_down_body_->begin(), scan_down_body_->end(), [&](const auto &point) {
-            // [> transform to world frame <]
-            // // TODO: check if valid
-            // scan_down_world_->push_back(PointBodyToWorld(point));
+        // std::for_each(std::execution::unseq, scan_down_body_->begin(), scan_down_body_->end(), [&](const auto &point)
+        // {
+        // [> transform to world frame <]
+        // // TODO: check if valid
+        // scan_down_world_->push_back(PointBodyToWorld(point));
         // });
 
         PublishOdometry(pub_odom_aft_mapped_);
@@ -419,41 +420,6 @@ void LaserMapping::StandardPCLCallBack(const sensor_msgs::PointCloud2::ConstPtr 
             last_timestamp_lidar_ = msg->header.stamp.toSec();
         },
         "Preprocess (Standard)");
-    mtx_buffer_.unlock();
-}
-
-void LaserMapping::LivoxPCLCallBack(const livox_ros_driver::CustomMsg::ConstPtr &msg) {
-    mtx_buffer_.lock();
-    Timer::Evaluate(
-        [&, this]() {
-            scan_count_++;
-            if (msg->header.stamp.toSec() < last_timestamp_lidar_) {
-                LOG(WARNING) << "lidar loop back, clear buffer";
-                lidar_buffer_.clear();
-            }
-
-            last_timestamp_lidar_ = msg->header.stamp.toSec();
-
-            if (!time_sync_en_ && abs(last_timestamp_imu_ - last_timestamp_lidar_) > 10.0 && !imu_buffer_.empty() &&
-                !lidar_buffer_.empty()) {
-                LOG(INFO) << "IMU and LiDAR not Synced, IMU time: " << last_timestamp_imu_
-                          << ", lidar header time: " << last_timestamp_lidar_;
-            }
-
-            if (time_sync_en_ && !timediff_set_flg_ && abs(last_timestamp_lidar_ - last_timestamp_imu_) > 1 &&
-                !imu_buffer_.empty()) {
-                timediff_set_flg_ = true;
-                timediff_lidar_wrt_imu_ = last_timestamp_lidar_ + 0.1 - last_timestamp_imu_;
-                LOG(INFO) << "Self sync IMU and LiDAR, time diff is " << timediff_lidar_wrt_imu_;
-            }
-
-            PointCloudType::Ptr ptr(new PointCloudType());
-            preprocess_->Process(msg, ptr);
-            lidar_buffer_.emplace_back(ptr);
-            time_buffer_.emplace_back(last_timestamp_lidar_);
-        },
-        "Preprocess (Livox)");
-
     mtx_buffer_.unlock();
 }
 
@@ -600,13 +566,13 @@ void LaserMapping::ObsModel(state_ikfom &s, esekfom::dyn_share_datastruct<double
     std::vector<size_t> index(cnt_pts);
     std::iota(index.begin(), index.end(), 0);
     // for (size_t i = 0; i < index.size(); ++i) {
-        // index[i] = i;
+    // index[i] = i;
     // }
 
     Timer::Evaluate(
         [&, this]() {
-            auto R_wl = static_cast<float>(s.rot * s.offset_R_L_I);
-            auto t_wl = static_cast<float>(s.rot * s.offset_T_L_I + s.pos);
+            auto R_wl = (s.rot * s.offset_R_L_I).cast<float>();
+            auto t_wl = (s.rot * s.offset_T_L_I + s.pos).cast<float>();
 
             /** closest surface search and residual computation **/
             std::for_each(std::execution::par_unseq, index.begin(), index.end(), [&](const size_t &i) {
@@ -617,9 +583,9 @@ void LaserMapping::ObsModel(state_ikfom &s, esekfom::dyn_share_datastruct<double
                 common::V3F p_body = point_body.getVector3fMap();
                 point_world.getVector3fMap() = R_wl * p_body + t_wl;
                 point_world.intensity = point_body.intensity;
-                
-                //TODO: this is parellel transform
-                
+
+                // TODO: this is parellel transform
+
                 auto &points_near = nearest_points_[i];
                 if (ekfom_data.converge) {
                     /** Find the closest surfaces in the map **/
