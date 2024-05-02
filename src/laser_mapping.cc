@@ -1,9 +1,12 @@
+#include <tbb/blocked_range.h>
 #include <tf/transform_broadcaster.h>
 #include <yaml-cpp/yaml.h>
+#include <algorithm>
 #include <execution>
 #include <fstream>
 #include <numeric>
 
+#include <tbb/parallel_for.h>
 #include "common_lib.h"
 #include "laser_mapping.h"
 #include "ros/node_handle.h"
@@ -506,6 +509,57 @@ void LaserMapping::MapIncremental() {
     std::vector<size_t> index(cur_pts);
     std::iota(index.begin(), index.end(), 0.0);
 
+    // scan_down_world_->points.reserve(cur_pts);
+
+    // TODO: needs to verified
+    // std::transform(scan_down_body_->points.cbegin(), scan_down_body_->points.cend(),
+    // scan_down_world_->points.begin(),
+    // [&](const auto &point_body) { PointBodyToWorld(point_body); });
+
+    // auto to_add = [&](float x, float y, float z) -> bool {
+    // if (fabs(x) > 0.5 * filter_size_map_min_ && fabs(y) > 0.5 * filter_size_map_min_ &&
+    // fabs(z) > 0.5 * filter_size_map_min_) {
+    // return true;
+    // }
+    // return false;
+    // };
+
+    // std::for_each(index.cbegin(), index.cend(), [&](const auto &idx) {
+    // PointType &point_world = scan_down_world_->points[idx];
+    // if (!nearest_points_[idx].empty() && flg_EKF_inited_) {
+    // const PointVector &points_near = nearest_points_[idx];
+
+    // Eigen::Vector3f center =
+    // ((point_world.getVector3fMap() / filter_size_map_min_).array().floor() + 0.5) * filter_size_map_min_;
+
+    // Eigen::Vector3f dis_2_center = points_near[0].getVector3fMap() - center;
+
+    // // if (fabs(dis_2_center.x()) > 0.5 * filter_size_map_min_ &&
+    // // fabs(dis_2_center.y()) > 0.5 * filter_size_map_min_ &&
+    // // fabs(dis_2_center.z()) > 0.5 * filter_size_map_min_) {
+    // // point_no_need_downsample.emplace_back(point_world);
+    // // return;
+    // // }
+
+    // bool need_add = true;
+    // float dist = common::calc_dist(point_world.getVector3fMap(), center);
+    // if (points_near.size() >= options::NUM_MATCH_POINTS) {
+    // for (int readd_i = 0; readd_i < options::NUM_MATCH_POINTS; readd_i++) {
+    // if (common::calc_dist(points_near[readd_i].getVector3fMap(), center) < dist + 1e-6) {
+    // need_add = false;
+    // break;
+    // }
+    // }
+    // }
+    // if (need_add) {
+    // //
+    // points_to_add.emplace_back(point_world);
+    // }
+    // } else {
+    // points_to_add.emplace_back(point_world);
+    // }
+    // });
+    auto start = std::chrono::system_clock::now();
     std::for_each(std::execution::unseq, index.begin(), index.end(), [&](const size_t &i) {
         /* transform to world frame */
         scan_down_world_->points[i] = PointBodyToWorld(scan_down_body_->points[i]);
@@ -527,6 +581,7 @@ void LaserMapping::MapIncremental() {
                 return;
             }
 
+            // TODO delete this and tbbfy the loop based on num points
             bool need_add = true;
             float dist = common::calc_dist(point_world.getVector3fMap(), center);
             if (points_near.size() >= options::NUM_MATCH_POINTS) {
@@ -544,6 +599,11 @@ void LaserMapping::MapIncremental() {
             points_to_add.emplace_back(point_world);
         }
     });
+    auto end = std::chrono::system_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end - start;
+
+    ROS_WARN("The number of points_to_add is %zu and number of points_noneed_downsample is %zu and the time is %f",
+             points_to_add.size(), point_no_need_downsample.size(), elapsed_seconds.count());
 
     Timer::Evaluate(
         [&, this]() {
@@ -574,41 +634,78 @@ void LaserMapping::ObsModel(state_ikfom &s, esekfom::dyn_share_datastruct<double
             auto R_wl = (s.rot * s.offset_R_L_I).cast<float>();
             auto t_wl = (s.rot * s.offset_T_L_I + s.pos).cast<float>();
 
-            /** closest surface search and residual computation **/
-            std::for_each(std::execution::par_unseq, index.begin(), index.end(), [&](const size_t &i) {
-                PointType &point_body = scan_down_body_->points[i];
-                PointType &point_world = scan_down_world_->points[i];
+            tbb::parallel_for(tbb::blocked_range<int>(0, cnt_pts), [&](tbb::blocked_range<int> r) {
+                for (auto i = r.begin(); i < r.end(); ++i) {
+                    // TODO: these non const should die
+                    PointType &point_body = scan_down_body_->points[i];
+                    PointType &point_world = scan_down_world_->points[i];
 
-                /* transform to world frame */
-                common::V3F p_body = point_body.getVector3fMap();
-                point_world.getVector3fMap() = R_wl * p_body + t_wl;
-                point_world.intensity = point_body.intensity;
+                    /* transform to world frame */
+                    common::V3F p_body = point_body.getVector3fMap();
+                    point_world.getVector3fMap() = R_wl * p_body + t_wl;
+                    point_world.intensity = point_body.intensity;
 
-                // TODO: this is parellel transform
-
-                auto &points_near = nearest_points_[i];
-                if (ekfom_data.converge) {
-                    /** Find the closest surfaces in the map **/
-                    ivox_->GetClosestPoint(point_world, points_near, options::NUM_MATCH_POINTS);
-                    point_selected_surf_[i] = points_near.size() >= options::MIN_NUM_MATCH_POINTS;
-                    if (point_selected_surf_[i]) {
-                        point_selected_surf_[i] =
-                            common::esti_plane(plane_coef_[i], points_near, options::ESTI_PLANE_THRESHOLD);
+                    auto &points_near = nearest_points_[i];
+                    if (ekfom_data.converge) {
+                        /** Find the closest surfaces in the map **/
+                        ivox_->GetClosestPoint(point_world, points_near, options::NUM_MATCH_POINTS);
+                        point_selected_surf_[i] = points_near.size() >= options::MIN_NUM_MATCH_POINTS;
+                        if (point_selected_surf_[i]) {
+                            point_selected_surf_[i] =
+                                common::esti_plane(plane_coef_[i], points_near, options::ESTI_PLANE_THRESHOLD);
+                        }
                     }
-                }
 
-                if (point_selected_surf_[i]) {
-                    auto temp = point_world.getVector4fMap();
-                    temp[3] = 1.0;
-                    float pd2 = plane_coef_[i].dot(temp);
+                    if (point_selected_surf_[i]) {
+                        auto temp = point_world.getVector4fMap();
+                        temp[3] = 1.0;
+                        float pd2 = plane_coef_[i].dot(temp);
 
-                    bool valid_corr = p_body.norm() > 81 * pd2 * pd2;
-                    if (valid_corr) {
-                        point_selected_surf_[i] = true;
-                        residuals_[i] = pd2;
+                        bool valid_corr = p_body.norm() > 81 * pd2 * pd2;
+                        if (valid_corr) {
+                            point_selected_surf_[i] = true;
+                            residuals_[i] = pd2;
+                        }
                     }
                 }
             });
+
+            /** closest surface search and residual computation **/
+            // std::for_each(std::execution::par_unseq, index.begin(), index.end(), [&](const size_t &i) {
+            // // TODO: these non const should die
+            // PointType &point_body = scan_down_body_->points[i];
+            // PointType &point_world = scan_down_world_->points[i];
+
+            // [> transform to world frame <]
+            // common::V3F p_body = point_body.getVector3fMap();
+            // point_world.getVector3fMap() = R_wl * p_body + t_wl;
+            // point_world.intensity = point_body.intensity;
+
+            // // TODO: this is parellel for
+
+            // auto &points_near = nearest_points_[i];
+            // if (ekfom_data.converge) {
+            // [>* Find the closest surfaces in the map *<]
+            // ivox_->GetClosestPoint(point_world, points_near, options::NUM_MATCH_POINTS);
+            // point_selected_surf_[i] = points_near.size() >= options::MIN_NUM_MATCH_POINTS;
+            // if (point_selected_surf_[i]) {
+            // point_selected_surf_[i] =
+            // common::esti_plane(plane_coef_[i], points_near, options::ESTI_PLANE_THRESHOLD);
+            // }
+            // }
+
+            // if (point_selected_surf_[i]) {
+            // auto temp = point_world.getVector4fMap();
+            // temp[3] = 1.0;
+            // float pd2 = plane_coef_[i].dot(temp);
+
+            // bool valid_corr = p_body.norm() > 81 * pd2 * pd2;
+            // if (valid_corr) {
+            // point_selected_surf_[i] = true;
+            // residuals_[i] = pd2;
+            // }
+            // }
+            // });
         },
         "    ObsModel (Lidar Match)");
 
@@ -645,30 +742,33 @@ void LaserMapping::ObsModel(state_ikfom &s, esekfom::dyn_share_datastruct<double
             const common::V3F off_t = s.offset_T_L_I.cast<float>();
             const common::M3F Rt = s.rot.toRotationMatrix().transpose().cast<float>();
 
-            std::for_each(std::execution::par_unseq, index.begin(), index.end(), [&](const size_t &i) {
-                common::V3F point_this_be = corr_pts_[i].head<3>();
-                common::M3F point_be_crossmat = SKEW_SYM_MATRIX(point_this_be);
-                common::V3F point_this = off_R * point_this_be + off_t;
-                common::M3F point_crossmat = SKEW_SYM_MATRIX(point_this);
+            tbb::parallel_for(tbb::blocked_range<int>(0, index.size()), [&](tbb::blocked_range<int> r) {
+                for (auto i = r.begin(); i < r.end(); ++i) {
+                    // std::for_each(std::execution::par_unseq, index.begin(), index.end(), [&](const size_t &i) {
+                    common::V3F point_this_be = corr_pts_[i].head<3>();
+                    common::M3F point_be_crossmat = SKEW_SYM_MATRIX(point_this_be);
+                    common::V3F point_this = off_R * point_this_be + off_t;
+                    common::M3F point_crossmat = SKEW_SYM_MATRIX(point_this);
 
-                /*** get the normal vector of closest surface/corner ***/
-                common::V3F norm_vec = corr_norm_[i].head<3>();
+                    /*** get the normal vector of closest surface/corner ***/
+                    common::V3F norm_vec = corr_norm_[i].head<3>();
 
-                /*** calculate the Measurement Jacobian matrix H ***/
-                common::V3F C(Rt * norm_vec);
-                common::V3F A(point_crossmat * C);
+                    /*** calculate the Measurement Jacobian matrix H ***/
+                    common::V3F C(Rt * norm_vec);
+                    common::V3F A(point_crossmat * C);
 
-                if (extrinsic_est_en_) {
-                    common::V3F B(point_be_crossmat * off_R.transpose() * C);
-                    ekfom_data.h_x.block<1, 12>(i, 0) << norm_vec[0], norm_vec[1], norm_vec[2], A[0], A[1], A[2], B[0],
-                        B[1], B[2], C[0], C[1], C[2];
-                } else {
-                    ekfom_data.h_x.block<1, 12>(i, 0) << norm_vec[0], norm_vec[1], norm_vec[2], A[0], A[1], A[2], 0.0,
-                        0.0, 0.0, 0.0, 0.0, 0.0;
+                    if (extrinsic_est_en_) {
+                        common::V3F B(point_be_crossmat * off_R.transpose() * C);
+                        ekfom_data.h_x.block<1, 12>(i, 0) << norm_vec[0], norm_vec[1], norm_vec[2], A[0], A[1], A[2],
+                            B[0], B[1], B[2], C[0], C[1], C[2];
+                    } else {
+                        ekfom_data.h_x.block<1, 12>(i, 0) << norm_vec[0], norm_vec[1], norm_vec[2], A[0], A[1], A[2],
+                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+                    }
+
+                    /*** Measurement: distance to the closest surface/corner ***/
+                    ekfom_data.h(i) = -corr_pts_[i][3];
                 }
-
-                /*** Measurement: distance to the closest surface/corner ***/
-                ekfom_data.h(i) = -corr_pts_[i][3];
             });
         },
         "    ObsModel (IEKF Build Jacobian)");
