@@ -315,6 +315,9 @@ void LaserMapping::Run() {
         scan_down_body_->clear();
         scan_down_world_->clear();
         voxel_scan_.filter(*scan_down_body_);
+        scan_down_world_->reserve(scan_down_body_->size());
+        std::for_each(scan_down_body_->begin(), scan_down_body_->end(),
+                      [&](const auto &point) { scan_down_world_->emplace_back(PointBodyToWorld(point)); });
 
         PublishOdometry(pub_odom_aft_mapped_);
         PublishKeypoints(keypoints_pub_);
