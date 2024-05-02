@@ -245,7 +245,7 @@ void IVox<dim, node_type, PointType>::GenerateNearbyGrids() {
 
 template <int dim, IVoxNodeType node_type, typename PointType>
 void IVox<dim, node_type, PointType>::AddPoints(const PointVector& points_to_add) {
-    std::for_each(std::execution::unseq, points_to_add.begin(), points_to_add.end(), [this](const auto& pt) {
+    std::for_each(points_to_add.begin(), points_to_add.end(), [this](const auto& pt) {
         auto key = Pos2Grid(ToEigen<float, dim>(pt));
 
         auto iter = grids_map_.find(key);
