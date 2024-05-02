@@ -6,8 +6,9 @@
 #define FASTER_LIO_IVOX3D_H
 
 #include <glog/logging.h>
-#include <execution>
+#include <algorithm>
 #include <list>
+#include <numeric>
 #include <thread>
 
 #include "eigen_types.h"
@@ -67,9 +68,9 @@ class IVox {
     }
 
     /**
-    * clear eveything
-    */
-    inline void Reset(){
+     * clear eveything
+     */
+    inline void Reset() {
         grids_cache_.clear();
         grids_map_.clear();
         nearby_grids_.clear();
@@ -240,25 +241,6 @@ void IVox<dim, node_type, PointType>::GenerateNearbyGrids() {
     } else {
         LOG(ERROR) << "Unknown nearby_type!";
     }
-}
-
-template <int dim, IVoxNodeType node_type, typename PointType>
-bool IVox<dim, node_type, PointType>::GetClosestPoint(const PointVector& cloud, PointVector& closest_cloud) {
-    std::vector<size_t> index(cloud.size());
-    for (int i = 0; i < cloud.size(); ++i) {
-        index[i] = i;
-    }
-    closest_cloud.resize(cloud.size());
-
-    std::for_each(std::execution::par_unseq, index.begin(), index.end(), [&cloud, &closest_cloud, this](size_t idx) {
-        PointType pt;
-        if (GetClosestPoint(cloud[idx], pt)) {
-            closest_cloud[idx] = pt;
-        } else {
-            closest_cloud[idx] = PointType();
-        }
-    });
-    return true;
 }
 
 template <int dim, IVoxNodeType node_type, typename PointType>
