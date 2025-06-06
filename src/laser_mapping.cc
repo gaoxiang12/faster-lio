@@ -279,7 +279,12 @@ void LaserMapping::Run() {
 
     /// the first scan
     if (flg_first_scan_) {
-        ivox_->AddPoints(scan_undistort_->points);
+        state_point_ = kf_.get_x();
+        scan_down_world_->resize(scan_undistort_->size());
+        for (int i = 0; i < scan_undistort_->size(); i++) {
+            PointBodyToWorld(&scan_undistort_->points[i], &scan_down_world_->points[i]);
+        }
+        ivox_->AddPoints(scan_down_world_->points);
         first_lidar_time_ = measures_.lidar_bag_time_;
         flg_first_scan_ = false;
         return;
