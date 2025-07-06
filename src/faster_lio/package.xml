@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>faster_lio</name>
+  <version>0.0.0</version>
+  <description>
+    FasterLIO is developed from FastLIO2, see related paper: Chunge Bai et al. Faster-LIO: Lightweight Tightly
+    Coupled Lidar-inertial Odometry using Parallel Sparse Incremental Voxels, IEEE RA-Letters, 2022
+  </description>
+  <maintainer email="gao.xiang.thu@gmail.com">gaoxiang</maintainer>
+  <license>BSD</license>
+  <author email="gao.xiang.thu@gmail.com">Gao Xiang</author>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>PCL</depend>
+  <depend>gflags</depend>
+  <depend>glog</depend>
+  <depend>faster_lio_interfaces</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

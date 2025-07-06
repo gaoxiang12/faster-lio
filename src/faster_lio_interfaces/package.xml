@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>faster_lio_interfaces</name>
+  <version>0.0.1</version>
+  <description>Message interface definitions for Faster LIO</description>
+  <maintainer email="your_email@example.com">Your Name</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- 生成消息依赖 -->
+  <build_depend>rosidl_default_generators</build_depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
+
+  <!-- 如果消息依赖其他消息包，如 geometry_msgs -->
+  <build_depend>std_msgs</build_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+
+  <!-- 这个声明告诉ROS这包是接口包 -->
+  <member_of_group>rosidl_interface_packages</member_of_group>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

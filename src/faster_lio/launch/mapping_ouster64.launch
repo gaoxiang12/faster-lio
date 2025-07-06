@@ -1,0 +1,21 @@
+<launch>
+<!-- Launch file for ouster OS2-64 LiDAR -->
+
+    <arg name="rviz" default="true" />
+
+    <rosparam command="load" file="$(find faster_lio)/config/ouster64.yaml" />
+
+    <param name="feature_extract_enable" type="bool" value="0"/>
+    <param name="point_filter_num_" type="int" value="4"/>
+    <param name="max_iteration" type="int" value="3" />
+    <param name="filter_size_surf" type="double" value="0.5" />
+    <param name="filter_size_map" type="double" value="0.5" />
+    <param name="cube_side_length" type="double" value="1000" />
+    <param name="runtime_pos_log_enable" type="bool" value="0" />
+    <node pkg="faster_lio" type="run_mapping_online" name="laserMapping" output="screen" /> 
+
+    <group if="$(arg rviz)">
+    <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find faster_lio)/rviz_cfg/loam_livox.rviz" />
+    </group>
+
+</launch>

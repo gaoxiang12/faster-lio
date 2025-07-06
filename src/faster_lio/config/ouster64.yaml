@@ -1,0 +1,47 @@
+common:
+    lid_topic:  "/os_cloud_node/points"
+    imu_topic:  "/os_cloud_node/imu"
+    time_sync_en: false         # ONLY turn on when external time synchronization is really not possible
+    
+preprocess:
+    lidar_type: 3                # 1 for Livox serials LiDAR, 2 for Velodyne LiDAR, 3 for ouster LiDAR, 
+    scan_line: 64
+    blind: 4
+    time_scale: 1e-3
+
+mapping:
+    acc_cov: 0.1
+    gyr_cov: 0.1
+    b_acc_cov: 0.0001
+    b_gyr_cov: 0.0001
+    fov_degree:    180
+    det_range:     150.0
+    extrinsic_est_en:  true      # true: enable the online estimation of IMU-LiDAR extrinsic
+    extrinsic_T: [ 0.0, 0.0, 0.0 ]
+    extrinsic_R: [1, 0, 0,
+                  0, 1, 0,
+                  0, 0, 1]
+
+publish:
+    path_publish_en:  false
+    scan_publish_en:  true       # false: close all the point cloud output
+    scan_effect_pub_en: true    # true: publish the pointscloud of effect point
+    dense_publish_en: false       # false: low down the points number in a global-frame point clouds scan.
+    scan_bodyframe_pub_en: true  # true: output the point cloud scans in IMU-body-frame
+
+path_save_en: true
+
+pcd_save:
+    pcd_save_en: true
+    interval: -1                 # how many LiDAR frames saved in each pcd file; 
+                                 # -1 : all frames will be saved in ONE pcd file, may lead to memory crash when having too much frames.
+feature_extract_enable: false
+point_filter_num: 3
+max_iteration: 3
+filter_size_surf: 0.5
+filter_size_map: 0.5             # 暂时未用到，代码中为0， 即倾向于将降采样后的scan中的所有点加入map
+cube_side_length: 1000
+
+ivox_grid_resolution: 0.5        # default=0.2
+ivox_nearby_type: 18             # 6, 18, 26
+esti_plane_threshold: 0.1        # default=0.1
