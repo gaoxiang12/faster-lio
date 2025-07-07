@@ -42,7 +42,6 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <Eigen/Sparse>
-#include <boost/bind.hpp>
 
 #include "../mtk/build_manifold.hpp"
 #include "../mtk/startIdx.hpp"
