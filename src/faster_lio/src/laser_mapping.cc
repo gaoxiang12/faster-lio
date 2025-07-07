@@ -105,9 +105,9 @@ bool LaserMapping::LoadParams() {
     this->get_parameter("path_save_en", path_save_en_);
     this->get_parameter("publish.path_publish_en", path_pub_en_);
     this->get_parameter("publish.scan_publish_en", scan_pub_en_);
+    this->get_parameter("publish.scan_effect_pub_en", scan_effect_pub_en_);
     this->get_parameter("publish.dense_publish_en", dense_pub_en_);
     this->get_parameter("publish.scan_bodyframe_pub_en", scan_body_pub_en_);
-    this->get_parameter("publish.scan_effect_pub_en", scan_effect_pub_en_);
     this->get_parameter("publish.tf_imu_frame", tf_imu_frame_);
     this->get_parameter("publish.tf_world_frame", tf_world_frame_);
     this->get_parameter("max_iteration", options::NUM_MAX_ITERATIONS);
@@ -172,10 +172,13 @@ bool LaserMapping::LoadParams() {
     }
 
     path_.header.stamp = this->now();
+    CHECK(!tf_world_frame_.empty());
     path_.header.frame_id = tf_world_frame_;
 
     voxel_scan_.setLeafSize(filter_size_surf_min, filter_size_surf_min, filter_size_surf_min);
 
+    CHECK(!extrinT_.empty());
+    CHECK(!extrinR_.empty());
     common::V3D lidar_T_wrt_IMU = common::VecFromArray<double>(extrinT_);
     common::M3D lidar_R_wrt_IMU = common::MatFromArray<double>(extrinR_);
 

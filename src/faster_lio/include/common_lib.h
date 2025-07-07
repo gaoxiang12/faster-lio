@@ -30,6 +30,8 @@ using PointVector = std::vector<PointType, Eigen::aligned_allocator<PointType>>;
 
 namespace faster_lio::common {
 
+#define PRINT_VAL(val) LOG(INFO) << #val << ": " << val
+
 constexpr double G_m_s2 = 9.81;  // Gravity const in GuangDong/China
 
 template <typename S>
