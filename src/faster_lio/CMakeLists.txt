@@ -61,7 +61,6 @@ target_link_libraries(run_mapping_online
         )
 ament_target_dependencies(run_mapping_online rclcpp sensor_msgs nav_msgs geometry_msgs tf2_ros tf2_eigen Eigen3 glog PCL faster_lio_interfaces yaml-cpp)
 
-# Fix later
 add_executable(run_mapping_offline app/run_mapping_offline.cc)
 target_link_libraries(run_mapping_offline
         faster_lio gflags ${PCL_LIBRARIES} glog Eigen3::Eigen
@@ -75,10 +74,13 @@ install(DIRECTORY launch config
   DESTINATION share/${PROJECT_NAME}
 )
 
-# Remove faster_lio_node if not built
-install(TARGETS faster_lio run_mapping_online
-  run_mapping_offline
+install(TARGETS run_mapping_online run_mapping_offline
   DESTINATION lib/${PROJECT_NAME}
 )
 
+install(TARGETS faster_lio
+  DESTINATION lib
+)
+
+ament_export_libraries(faster_lio)
 ament_package()
