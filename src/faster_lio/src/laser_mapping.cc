@@ -153,6 +153,9 @@ bool LaserMapping::LoadParams() {
     } else if (lidar_type == 3) {
         preprocess_->SetLidarType(LidarType::OUST64);
         LOG(INFO) << "Using OUST 64 Lidar";
+    } else if (lidar_type == 4) {
+        preprocess_->SetLidarType(LidarType::JT16);
+        LOG(INFO) << "Using Hesai JT16 Lidar";
     } else {
         LOG(WARNING) << "unknown lidar_type";
         return false;
@@ -911,7 +914,7 @@ void LaserMapping::Finish() {
         std::string file_name = std::string("scans.pcd");
         std::string all_points_dir("PCD/" + file_name);
         pcl::PCDWriter pcd_writer;
-        LOG(INFO) << "current scan saved to /PCD/" << file_name;
+        LOG(INFO) << "current scan saved to " << all_points_dir;
         pcd_writer.writeBinary(all_points_dir, *pcl_wait_save_);
     }
 

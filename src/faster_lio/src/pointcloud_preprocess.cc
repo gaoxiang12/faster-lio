@@ -18,14 +18,17 @@ void PointCloudPreprocess::Process(const faster_lio_interfaces::msg::CustomMsg::
 
 void PointCloudPreprocess::Process(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &msg, PointCloudType::Ptr &pcl_out) {
     switch (lidar_type_) {
+        case LidarType::AVIA:
+            LOG(FATAL) << "AVIA LiDAR should be handled somewhere else";
         case LidarType::OUST64:
             Oust64Handler(msg);
             break;
-
         case LidarType::VELO32:
             VelodyneHandler(msg);
             break;
-
+        case LidarType::JT16:
+            JT16Handler(msg);
+            break;
         default:
             LOG(ERROR) << "Error LiDAR Type";
             break;
@@ -184,6 +187,63 @@ void PointCloudPreprocess::VelodyneHandler(const sensor_msgs::msg::PointCloud2::
                 cloud_out_.points.push_back(added_pt);
             }
         }
+    }
+}
+
+void PointCloudPreprocess::JT16Handler(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &msg) {
+    cloud_out_.clear();
+    cloud_full_.clear();
+
+    // Ensure fields: x, y, z, intensity, timestamp
+    const auto &fields = msg->fields;
+    int offset_x = -1, offset_y = -1, offset_z = -1, offset_intensity = -1, offset_time = -1;
+    for (const auto &field : fields) {
+        if (field.name == "x") offset_x = field.offset;
+        else if (field.name == "y") offset_y = field.offset;
+        else if (field.name == "z") offset_z = field.offset;
+        else if (field.name == "intensity") offset_intensity = field.offset;
+        else if (field.name == "timestamp") {
+            offset_time = field.offset;
+            CHECK_EQ(field.datatype, 8);
+        }
+    }
+
+    if (offset_x < 0 || offset_y < 0 || offset_z < 0 || offset_intensity < 0 || offset_time < 0) {
+        RCLCPP_ERROR(rclcpp::get_logger("PointCloudPreprocess"), "Missing required fields in JT16 point cloud");
+        return;
+    }
+
+    const size_t point_step = msg->point_step;
+    const size_t num_points = msg->width * msg->height;
+    cloud_out_.reserve(num_points / point_filter_num_ + 1);
+
+    const uint8_t *data_ptr = msg->data.data();
+    const double head_time = *reinterpret_cast<const double *>(data_ptr + offset_time);  // in seconds
+    for (size_t i = 0; i < num_points; ++i) {
+        if (i % point_filter_num_ != 0) continue;
+
+        const uint8_t *pt_base = data_ptr + i * point_step;
+
+        float x = *reinterpret_cast<const float *>(pt_base + offset_x);
+        float y = *reinterpret_cast<const float *>(pt_base + offset_y);
+        float z = *reinterpret_cast<const float *>(pt_base + offset_z);
+        double range = x * x + y * y + z * z;
+        if (range < blind_ * blind_) continue;
+
+        float intensity = *reinterpret_cast<const float *>(pt_base + offset_intensity);
+        double time = *reinterpret_cast<const double *>(pt_base + offset_time);  // in seconds
+
+        PointType added_pt;
+        added_pt.x = x;
+        added_pt.y = y;
+        added_pt.z = z;
+        added_pt.intensity = intensity;
+        added_pt.normal_x = 0;
+        added_pt.normal_y = 0;
+        added_pt.normal_z = 0;
+        added_pt.curvature = static_cast<float>((time - head_time) * 1000.0);  // convert to milliseconds
+
+        cloud_out_.push_back(added_pt);
     }
 }
 

@@ -1,13 +1,13 @@
 #ifndef FASTER_LIO_POINTCLOUD_PROCESSING_H
 #define FASTER_LIO_POINTCLOUD_PROCESSING_H
 
-#include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl_conversions/pcl_conversions.h>
 
-#include "sensor_msgs/msg/point_cloud2.hpp"
-#include "faster_lio_interfaces/msg/custom_msg.hpp"
 #include "common_lib.h"
+#include "faster_lio_interfaces/msg/custom_msg.hpp"
+#include "sensor_msgs/msg/point_cloud2.hpp"
 
 namespace velodyne_ros {
 struct EIGEN_ALIGN16 Point {
@@ -55,7 +55,7 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point,
 
 namespace faster_lio {
 
-enum class LidarType { AVIA = 1, VELO32, OUST64 };
+enum class LidarType : int { AVIA = 1, VELO32 = 2, OUST64 = 3, JT16 = 4 };
 
 /**
  * point cloud preprocess
@@ -86,6 +86,7 @@ class PointCloudPreprocess {
     void AviaHandler(const faster_lio_interfaces::msg::CustomMsg::ConstSharedPtr &msg);
     void Oust64Handler(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &msg);
     void VelodyneHandler(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &msg);
+    void JT16Handler(const sensor_msgs::msg::PointCloud2::ConstSharedPtr &msg);
 
     PointCloudType cloud_full_, cloud_out_;
 
