@@ -580,6 +580,7 @@ void LaserMapping::ObsModel(state_ikfom &s, esekfom::dyn_share_datastruct<double
                 auto &points_near = nearest_points_[i];
                 if (ekfom_data.converge) {
                     /** Find the closest surfaces in the map **/
+                    points_near.clear();
                     ivox_->GetClosestPoint(point_world, points_near, options::NUM_MATCH_POINTS);
                     point_selected_surf_[i] = points_near.size() >= options::MIN_NUM_MATCH_POINTS;
                     if (point_selected_surf_[i]) {
@@ -597,6 +598,8 @@ void LaserMapping::ObsModel(state_ikfom &s, esekfom::dyn_share_datastruct<double
                     if (valid_corr) {
                         point_selected_surf_[i] = true;
                         residuals_[i] = pd2;
+                    } else {
+                        point_selected_surf_[i] = false;
                     }
                 }
             });
