@@ -46,7 +46,7 @@ void PointCloudPreprocess::AviaHandler(const livox_ros_driver::CustomMsg::ConstP
     cloud_out_.reserve(plsize);
     cloud_full_.resize(plsize);
 
-    std::vector<bool> is_valid_pt(plsize, false);
+    std::vector<char> is_valid_pt(plsize, false);
     std::vector<uint> index(plsize - 1);
     for (uint i = 0; i < plsize - 1; ++i) {
         index[i] = i + 1;  // 从1开始

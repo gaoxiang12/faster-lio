@@ -107,7 +107,7 @@ class LaserMapping {
     common::VV4F corr_norm_;                          // inlier plane norms
     pcl::VoxelGrid<PointType> voxel_scan_;            // voxel filter for current scan
     std::vector<float> residuals_;                    // point-to-plane residuals
-    std::vector<bool> point_selected_surf_;           // selected points
+    std::vector<char> point_selected_surf_;           // selected points
     common::VV4F plane_coef_;                         // plane coeffs
 
     /// ros pub and sub stuffs
