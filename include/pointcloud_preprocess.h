@@ -6,6 +6,7 @@
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <cstdint>
 
 #include "common_lib.h"
 
@@ -21,8 +22,13 @@ struct EIGEN_ALIGN16 Point {
 
 // clang-format off
 POINT_CLOUD_REGISTER_POINT_STRUCT(velodyne_ros::Point,
-                                  (float, x, x)(float, y, y)(float, z, z)(float, intensity, intensity)
-                                      (float, time, time)(std::uint16_t, ring, ring))
+                                (float, x, x)
+                                (float, y, y)
+                                (float, z, z)
+                                (float, intensity, intensity)
+                                (float, time, time)
+                                (std::uint16_t, ring, ring)
+)
 // clang-format on
 
 namespace ouster_ros {
@@ -40,17 +46,17 @@ struct EIGEN_ALIGN16 Point {
 
 // clang-format off
 POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point,
-                                  (float, x, x)
-                                      (float, y, y)
-                                      (float, z, z)
-                                      (float, intensity, intensity)
-                                      // use std::uint32_t to avoid conflicting with pcl::uint32_t
-                                  (std::uint32_t, t, t)
-                                  (std::uint16_t, reflectivity, reflectivity)
-                                  (std::uint8_t, ring, ring)
-                                  (std::uint16_t, ambient, ambient)
-                                  (std::uint32_t, range, range)
-                                  )
+                                (float, x, x)
+                                (float, y, y)
+                                (float, z, z)
+                                (float, intensity, intensity)
+                                // use std::uint32_t to avoid conflicting with pcl::uint32_t
+                                (std::uint32_t, t, t)
+                                (std::uint16_t, reflectivity, reflectivity)
+                                (std::uint8_t, ring, ring)
+                                (std::uint16_t, ambient, ambient)
+                                (std::uint32_t, range, range)
+)
 // clang-format on
 
 namespace hesai_ros {
@@ -65,18 +71,39 @@ struct EIGEN_ALIGN16 Point {
 
 // clang-format off
 POINT_CLOUD_REGISTER_POINT_STRUCT(hesai_ros::Point,
-                                  (float, x, x)
-                                  (float, y, y)
-                                  (float, z, z)
-                                  (float, intensity, intensity)
-                                  (double, timestamp, timestamp)
-                                  (std::uint16_t, ring, ring)
+                                (float, x, x)
+                                (float, y, y)
+                                (float, z, z)
+                                (float, intensity, intensity)
+                                (double, timestamp, timestamp)
+                                (std::uint16_t, ring, ring)
+)
+// clang-format on
+
+namespace robosense_ros {
+struct EIGEN_ALIGN16 Point {
+    PCL_ADD_POINT4D;
+    float intensity;
+    uint16_t ring;
+    double timestamp;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+}  // namespace robosense_ros
+
+// clang-format off
+POINT_CLOUD_REGISTER_POINT_STRUCT(robosense_ros::Point,
+                                (float, x, x)
+                                (float, y, y)
+                                (float, z, z)
+                                (float, intensity, intensity)
+                                (std::uint16_t, ring, ring)
+                                (double, timestamp, timestamp)
 )
 // clang-format on
 
 namespace faster_lio {
 
-enum class LidarType { AVIA = 1, VELO32, OUST64,  HESAIxt32}; //{1, 2, 3, 4}
+enum class LidarType { AVIA = 1, VELO32, OUST64, HESAIxt32, ROBOSENSE };
 
 /**
  * point cloud preprocess
