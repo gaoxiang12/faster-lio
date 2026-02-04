@@ -27,6 +27,7 @@ void PointCloudPreprocess::Process(const sensor_msgs::PointCloud2::ConstPtr &msg
             break;
 
         case LidarType::HESAIxt32:
+        case LidarType::ROBOSENSE:
             HesaiHandler(msg);
             break;
 
@@ -191,8 +192,7 @@ void PointCloudPreprocess::VelodyneHandler(const sensor_msgs::PointCloud2::Const
     }
 }
 
-void PointCloudPreprocess::HesaiHandler(const sensor_msgs::PointCloud2::ConstPtr &msg)
-{
+void PointCloudPreprocess::HesaiHandler(const sensor_msgs::PointCloud2::ConstPtr &msg) {
     cloud_out_.clear();
     cloud_full_.clear();
 
@@ -203,10 +203,10 @@ void PointCloudPreprocess::HesaiHandler(const sensor_msgs::PointCloud2::ConstPtr
 
     /*** These variables only works when no point timestamps given ***/
     double omega_l = 3.61;  // scan angular velocity
-    std::vector<bool> is_first(num_scans_,true);
-    std::vector<double> yaw_fp(num_scans_, 0.0);      // yaw of first scan point
-    std::vector<float> yaw_last(num_scans_, 0.0);     // yaw of last scan point
-    std::vector<float> time_last(num_scans_, 0.0);    // last offset time
+    std::vector<bool> is_first(num_scans_, true);
+    std::vector<double> yaw_fp(num_scans_, 0.0);    // yaw of first scan point
+    std::vector<float> yaw_last(num_scans_, 0.0);   // yaw of last scan point
+    std::vector<float> time_last(num_scans_, 0.0);  // last offset time
     /*****************************************************************/
 
     if (pl_orig.points[plsize - 1].timestamp > 0) {
@@ -214,7 +214,7 @@ void PointCloudPreprocess::HesaiHandler(const sensor_msgs::PointCloud2::ConstPtr
     } else {
         given_offset_time_ = false;
         double yaw_first = atan2(pl_orig.points[0].y, pl_orig.points[0].x) * 57.29578;
-        double yaw_end  = yaw_first;
+        double yaw_end = yaw_first;
         int layer_first = pl_orig.points[0].ring;
         for (uint i = plsize - 1; i > 0; i--) {
             if (pl_orig.points[i].ring == layer_first) {
@@ -238,41 +238,38 @@ void PointCloudPreprocess::HesaiHandler(const sensor_msgs::PointCloud2::ConstPtr
         added_pt.intensity = pl_orig.points[i].intensity;
         added_pt.curvature = (pl_orig.points[i].timestamp - time_head) * 1000.f;  // curvature unit: ms
 
-        if (!given_offset_time_)
-        {
+        if (!given_offset_time_) {
             int layer = pl_orig.points[i].ring;
             double yaw_angle = atan2(added_pt.y, added_pt.x) * 57.2957;
 
             if (is_first[layer]) {
-                yaw_fp[layer]=yaw_angle;
-                is_first[layer]=false;
+                yaw_fp[layer] = yaw_angle;
+                is_first[layer] = false;
                 added_pt.curvature = 0.0;
-                yaw_last[layer]=yaw_angle;
-                time_last[layer]=added_pt.curvature;
+                yaw_last[layer] = yaw_angle;
+                time_last[layer] = added_pt.curvature;
                 continue;
             }
 
             // compute offset time
             if (yaw_angle <= yaw_fp[layer]) {
-                added_pt.curvature = (yaw_fp[layer]-yaw_angle) / omega_l;
+                added_pt.curvature = (yaw_fp[layer] - yaw_angle) / omega_l;
             } else {
-                added_pt.curvature = (yaw_fp[layer]-yaw_angle+360.0) / omega_l;
+                added_pt.curvature = (yaw_fp[layer] - yaw_angle + 360.0) / omega_l;
             }
 
-            if (added_pt.curvature < time_last[layer])  added_pt.curvature+=360.0/omega_l;
+            if (added_pt.curvature < time_last[layer]) added_pt.curvature += 360.0 / omega_l;
 
             yaw_last[layer] = yaw_angle;
-            time_last[layer]=added_pt.curvature;
+            time_last[layer] = added_pt.curvature;
         }
 
-        if (i % point_filter_num_ == 0)
-        {
-            if(added_pt.x*added_pt.x+added_pt.y*added_pt.y+added_pt.z*added_pt.z > (blind_ * blind_)) {
+        if (i % point_filter_num_ == 0) {
+            if (added_pt.x * added_pt.x + added_pt.y * added_pt.y + added_pt.z * added_pt.z > (blind_ * blind_)) {
                 cloud_out_.points.push_back(added_pt);
             }
         }
     }
-
 }
 
 }  // namespace faster_lio

@@ -108,6 +108,9 @@ bool LaserMapping::LoadParams(ros::NodeHandle &nh) {
     } else if (lidar_type == 4) {
         preprocess_->SetLidarType(LidarType::HESAIxt32);
         LOG(INFO) << "Using Hesai Pandar 32 Lidar";
+    } else if (lidar_type == 5) {
+        preprocess_->SetLidarType(LidarType::ROBOSENSE);
+        LOG(INFO) << "Using Robosense Lidar";
     } else {
         LOG(WARNING) << "unknown lidar_type";
         return false;
@@ -205,6 +208,9 @@ bool LaserMapping::LoadParamsFromYAML(const std::string &yaml_file) {
     } else if (lidar_type == 4) {
         preprocess_->SetLidarType(LidarType::HESAIxt32);
         LOG(INFO) << "Using Hesai Pandar 32 Lidar";
+    } else if (lidar_type == 5) {
+        preprocess_->SetLidarType(LidarType::ROBOSENSE);
+        LOG(INFO) << "Using Robosense Lidar";
     } else {
         LOG(WARNING) << "unknown lidar_type";
         return false;

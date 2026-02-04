@@ -33,3 +33,6 @@
 
 build/
 *.pcd
+
+#Mac OS
+.DS_Store
