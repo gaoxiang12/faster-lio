@@ -1,0 +1,13 @@
+<launch>
+	<!-- Launch file for Livox LiDAR (sensor_msgs::PointCloud2) -->
+	<arg name="rviz" default="false" />
+	<rosparam command="load" file="$(find faster_lio)/config/livox.yaml" />
+	<param name="runtime_pos_log_enable" type="bool" value="true" />
+
+	<node pkg="faster_lio" type="run_mapping_online" name="laserMapping" output="screen" />
+
+	<group if="$(arg rviz)">
+		<node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find faster_lio)/config/rviz/faster_lio.rviz" />
+	</group>
+
+</launch>
