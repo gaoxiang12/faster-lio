@@ -98,7 +98,7 @@ bool LaserMapping::LoadParams(ros::NodeHandle &nh) {
     LOG(INFO) << "lidar_type " << lidar_type;
     if (lidar_type == 1) {
         preprocess_->SetLidarType(LidarType::AVIA);
-        LOG(INFO) << "Using AVIA Lidar";
+        LOG(INFO) << "Using AVIA Lidar (livox_ros_driver::CustomMsg)";
     } else if (lidar_type == 2) {
         preprocess_->SetLidarType(LidarType::VELO32);
         LOG(INFO) << "Using Velodyne 32 Lidar";
@@ -111,6 +111,9 @@ bool LaserMapping::LoadParams(ros::NodeHandle &nh) {
     } else if (lidar_type == 5) {
         preprocess_->SetLidarType(LidarType::ROBOSENSE);
         LOG(INFO) << "Using Robosense Lidar";
+    } else if (lidar_type == 6) {
+        preprocess_->SetLidarType(LidarType::LIVOX);
+        LOG(INFO) << "Using Livox Lidar (sensor_msgs::PointCloud2)";
     } else {
         LOG(WARNING) << "unknown lidar_type";
         return false;
@@ -198,7 +201,7 @@ bool LaserMapping::LoadParamsFromYAML(const std::string &yaml_file) {
     LOG(INFO) << "lidar_type " << lidar_type;
     if (lidar_type == 1) {
         preprocess_->SetLidarType(LidarType::AVIA);
-        LOG(INFO) << "Using AVIA Lidar";
+        LOG(INFO) << "Using AVIA Lidar (livox_ros_driver::CustomMsg)";
     } else if (lidar_type == 2) {
         preprocess_->SetLidarType(LidarType::VELO32);
         LOG(INFO) << "Using Velodyne 32 Lidar";
@@ -211,6 +214,9 @@ bool LaserMapping::LoadParamsFromYAML(const std::string &yaml_file) {
     } else if (lidar_type == 5) {
         preprocess_->SetLidarType(LidarType::ROBOSENSE);
         LOG(INFO) << "Using Robosense Lidar";
+    } else if (lidar_type == 6) {
+        preprocess_->SetLidarType(LidarType::LIVOX);
+        LOG(INFO) << "Using Livox Lidar (sensor_msgs::PointCloud2)";
     } else {
         LOG(WARNING) << "unknown lidar_type";
         return false;
